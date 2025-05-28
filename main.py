@@ -6,7 +6,7 @@ tracer_provider = register(
     auto_instrument=True,
 )
 
-agent = Agent(
+first_layer_agent = Agent(
     name="Assistant",
     instructions="You are a helpful assistant",
     model="litellm/gemini/gemini-2.0-flash-lite",

@@ -24,7 +24,7 @@ export function createAzure() {
   });
 
   server.tool(
-    "instances",
+    "azure.instances",
     "Overview of available instance types with vCPU and memory.",
     async () => ({
       content: instances.map((instance) => ({
@@ -35,7 +35,7 @@ export function createAzure() {
   );
 
   server.tool(
-    "price",
+    "azure.price",
     "Price per hour of a specific instance type.",
     { type: z.string() },
     async ({ type }) => {

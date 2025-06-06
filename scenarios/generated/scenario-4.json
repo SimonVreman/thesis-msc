@@ -1,0 +1,24 @@
+{
+  "instances": [
+    {
+      "id": "01973ab4-988a-7009-ab7b-c3c3f645cfe7",
+      "type": "m5.4xlarge"
+    },
+    {
+      "id": "01973ab4-988a-700a-8411-2c2e42bfa767",
+      "type": "m5.4xlarge"
+    },
+    {
+      "id": "01973ab4-988a-700b-b11b-1ccdd2a70cba",
+      "type": "m5.2xlarge"
+    },
+    {
+      "id": "01973ab4-988a-700c-827b-e6f8121b7cff",
+      "type": "e2-micro"
+    },
+    {
+      "id": "01973ab4-988a-700d-a975-aec5559d6595",
+      "type": "t3a.small"
+    }
+  ]
+}

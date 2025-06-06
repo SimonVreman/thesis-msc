@@ -22,7 +22,7 @@ export function createAws() {
   });
 
   server.tool(
-    "available-instances",
+    "aws.available-instances",
     "Get a list of available instance types with their vCPU and memory.",
     async () => ({
       content: instances.map((instance) => ({
@@ -33,7 +33,7 @@ export function createAws() {
   );
 
   server.tool(
-    "instance-price",
+    "aws.instance-price",
     "Get the hourly price of a specific instance type.",
     { name: z.string() },
     async ({ name }) => {

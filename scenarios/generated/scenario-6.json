@@ -1,0 +1,12 @@
+{
+  "instances": [
+    {
+      "id": "01973ab4-988a-700f-a131-24e461ad36c3",
+      "type": "m5.xlarge"
+    },
+    {
+      "id": "01973ab4-988a-7010-8ed8-77ceb830e77a",
+      "type": "e2-micro"
+    }
+  ]
+}

@@ -22,7 +22,7 @@ export function createGCP() {
   });
 
   server.tool(
-    "machines",
+    "gcp.machines",
     "Overview of available machine types with vCPU and memory.",
     async () => ({
       content: instances.map((instance) => ({
@@ -33,7 +33,7 @@ export function createGCP() {
   );
 
   server.tool(
-    "price",
+    "gcp.machine-price",
     "Price for one hour of a specific machine type.",
     { type: z.string() },
     async ({ type }) => {

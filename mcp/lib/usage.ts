@@ -1,50 +1,108 @@
-import * as fs from "fs";
-import * as zlib from "zlib";
-import * as readline from "readline";
+import {
+  count,
+  countWhere,
+  read,
+  readNth,
+  readNthWhere,
+  readWhere,
+} from "./csvgz";
 
-/**
- * Reads the first N lines of a gzipped CSV file without loading the entire file into memory.
- * @param filePath Path to the gzipped CSV file.
- * @param numLines Number of lines to read.
- * @returns Promise that resolves to an array of lines as strings.
- */
-export async function readFirstNLinesGzippedCSV(
-  filePath: string,
-  numLines: number
-): Promise<string[]> {
-  return new Promise((resolve, reject) => {
-    const lines: string[] = [];
-    const fileStream = fs.createReadStream(filePath);
-    const gunzip = zlib.createGunzip();
-    const rl = readline.createInterface({
-      input: fileStream.pipe(gunzip),
-    });
+const paths = {
+  cpu1: "./traces/cpu/1.csv.gz",
+  vm: "./traces/vmtable.csv.gz",
+};
 
-    rl.on("line", (line) => {
-      lines.push(line);
-      if (lines.length === numLines) {
-        rl.close();
-        resolve(lines);
-      }
-    });
+const idx = {
+  cpu: { t: 0, vm: 1, min: 2, max: 3, avg: 4 },
+  vm: {
+    id: 0,
+    subId: 1,
+    depId: 2,
+    tCreate: 3,
+    tDelete: 4,
+    max: 5,
+    avg: 6,
+    p95Max: 7,
+    cat: 8,
+    core: 9,
+    mem: 10,
+  },
+};
 
-    rl.on("error", (err) => {
-      reject(err);
-    });
+const vmLine = (line: string) => {
+  const [id, subId, depId, tCreate, tDelete, max, avg, p95Max, cat, core, mem] =
+    line.split(",");
+  return {
+    id,
+    subId,
+    depId,
+    tCreate,
+    tDelete,
+    max,
+    avg,
+    p95Max,
+    cat,
+    core,
+    mem,
+  };
+};
 
-    rl.on("close", () => {
-      fileStream.close();
-      if (lines.length < numLines) {
-        resolve(lines);
-      }
-    });
-  });
-}
+const cpuLine = (line: string) => {
+  const [t, vm, min, max, avg] = line.split(",");
+  return { t, vm, min, max, avg };
+};
 
-readFirstNLinesGzippedCSV("./traces/vmtable.csv.gz", 10).then((lines) => {
-  lines.forEach((line) => console.log(line));
+// const vmLineCount = await count({ path: paths.vm });
+// const cpu1LineCount = await count({ path: paths.cpu1 });
+const vmLineCount = 2695548;
+const cpu1LineCount = 10000000;
+
+console.log("vm linecount:", vmLineCount);
+console.log("cpu 1 linecount:", cpu1LineCount);
+
+// const myRandomVM = (
+//   await readNth({ path: paths.vm, n: Math.floor(Math.random() * 100) })
+// )?.split(",");
+
+// console.log("random vm:", myRandomVM);
+
+// await readWhere({
+//   path: paths.cpu1,
+//   predicate: (l) =>
+//     l.split(",")[1] ===
+//     "yNf/R3X8fyXkOJm3ihXQcT0F52a8cDWPPRzTT6QFW8N+1QPfeKR5//6xyX0VYn7X", //myRandomVM?.[0],
+//   callback: (l) => console.log("VM trace:", l),
+//   limit: 10,
+// });
+
+// console.log(await readNth({ path: paths.cpu1, n: 0 }));
+
+const firstCpuLine = await readNth({ path: paths.cpu1, n: 0 });
+const lastCpuLine = await readNth({ path: paths.cpu1, n: cpu1LineCount - 1 });
+const tMin = +cpuLine(firstCpuLine!).t;
+const tMax = +cpuLine(lastCpuLine!).t;
+
+const tPredicate = (l: string) => {
+  const vm = vmLine(l);
+  return +vm.tCreate < tMax && +vm.tDelete > tMin;
+};
+
+const vmsWithinTime = await countWhere({
+  path: paths.vm,
+  predicate: tPredicate,
 });
 
-readFirstNLinesGzippedCSV("./traces/cpu/1.csv.gz", 10).then((lines) => {
-  lines.forEach((line) => console.log(line));
+const randomVM = await readNthWhere({
+  path: paths.vm,
+  predicate: tPredicate,
+  n: Math.floor(Math.random() * vmsWithinTime),
+});
+
+console.log("random vm within time:", vmLine(randomVM!));
+
+await readWhere({
+  path: paths.cpu1,
+  predicate: (l) => cpuLine(l).vm === vmLine(randomVM!).id,
+  callback: (l) => console.log("VM trace:", l),
+  limit: 10,
 });

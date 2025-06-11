@@ -1,0 +1,32 @@
+datasource db {
+  url = "postgresql://postgres:password@localhost:5432/thesis"
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output = "./generated/prisma"
+}
+
+model VirtualMachine {
+  id String @db.Char(64) @id
+  subscription String @db.Char(64)
+  deployment String @db.Char(88)
+  created DateTime
+  deleted DateTime
+  maxCpu Float
+  avgCpu Float
+  p95MaxCpu Float
+  category String
+  cores Int
+  memory Int
+}
+
+model Trace {
+  @@id([virtualMachine, time])
+  time DateTime
+  virtualMachine String @db.Char(64) // No FK for performance
+  min Float
+  max Float
+  avg Float
+}

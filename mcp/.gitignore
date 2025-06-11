@@ -6,6 +6,7 @@ out
 dist
 *.tgz
 traces
+generated
 
 # code coverage
 coverage

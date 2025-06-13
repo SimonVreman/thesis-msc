@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "start": "bun run index.ts",
-    "inspect": "pnpx @modelcontextprotocol/inspector"
+    "inspect": "pnpx @modelcontextprotocol/inspector",
+    "scenarios": "bun run tools/scenarios.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

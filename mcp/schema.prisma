@@ -8,24 +8,24 @@ generator client {
   output = "./generated/prisma"
 }
 
-model VirtualMachine {
+model virtual_machine {
   id String @db.Char(64) @id
   subscription String @db.Char(64)
   deployment String @db.Char(88)
   created DateTime
   deleted DateTime
-  maxCpu Float
-  avgCpu Float
-  p95MaxCpu Float
+  max_cpu Float
+  avg_cpu Float
+  p95_max_cpu Float
   category String
   cores Int
   memory Int
 }
 
-model Trace {
-  @@id([virtualMachine, time])
+model trace {
+  @@id([virtual_machine, time])
   time DateTime
-  virtualMachine String @db.Char(64) // No FK for performance
+  virtual_machine String @db.Char(64) // No FK for performance
   min Float
   max Float
   avg Float

@@ -84,7 +84,6 @@ export const readChunked = ({
       count++;
 
       if (buffer.length >= chunkSize) {
-        console.log("finished reading chunk of", buffer.length, "lines");
         const oldBuffer = buffer;
         buffer = [];
         read.pause();

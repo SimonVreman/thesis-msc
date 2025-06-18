@@ -4,7 +4,7 @@ import { PrismaClient } from "../generated/prisma";
 import { textError, textSuccess } from "../lib/response";
 import { gcpInstanceTypes } from "../registry/instance-types";
 
-const toolname = (name: string) => `gcp.${name}` as const;
+const toolname = <T extends string>(name: T) => `gcp.${name}` as const;
 const prisma = new PrismaClient();
 
 export function createGCP() {
@@ -39,20 +39,19 @@ export function createGCP() {
     }
   );
 
-  // example id: 4HQq1hs1Uo4ZZeTsByYQYsvPHy8Lku4IHSRtL1I7svC9N4ByOXs8Ej6TSYgphYPw
   server.tool(
     toolname("usage"),
     "Get the usage of a specific machine.",
     { id: z.string() },
     async ({ id }) => {
-      const vm = await prisma.virtualMachine.findFirst({
+      const vm = await prisma.virtual_machine.findFirst({
         where: { id: { equals: id } },
       });
 
       if (!vm) return textError(`ERR: machine with ID ${id} not found.`);
 
       return textSuccess(
-        `Max CPU: ${vm.maxCpu}, Avg CPU: ${vm.avgCpu}, P95 Max CPU: ${vm.p95MaxCpu}`
+        `Max CPU: ${vm.max_cpu}, Avg CPU: ${vm.avg_cpu}, P95 Max CPU: ${vm.p95_max_cpu}`
       );
     }
   );

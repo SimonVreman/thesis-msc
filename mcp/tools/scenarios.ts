@@ -1,7 +1,7 @@
 import { randomUUIDv7 } from "bun";
 import { instanceTypes } from "../registry/instance-types";
 
-const outputDirectory = "./generated";
+const outputDirectory = "../generated/scenarios";
 const scenarioCount = 10;
 
 type Scenario = {

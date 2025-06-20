@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { azureInstanceTypes } from "../registry/instance-types";
+import { azureInstanceTypes, providerById } from "../registry/instance-types";
 import { textError, textSuccess } from "../lib/response";
 import { prisma } from "../lib/prisma";
 
@@ -47,7 +47,8 @@ export function createAzure() {
         where: { id: { equals: id } },
       });
 
-      if (!vm) return textError(`ERR: machine with ID ${id} not found.`);
+      if (!vm || providerById(vm.id) !== "azure")
+        return textError(`ERR: machine with ID ${id} not found.`);
 
       return textSuccess(
         `Max CPU: ${vm.max_cpu}, Avg CPU: ${vm.avg_cpu}, P95 Max CPU: ${vm.p95_max_cpu}`

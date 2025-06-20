@@ -1,6 +1,8 @@
-import { MCPServerStreamableHttp, run } from "@openai/agents";
-import { createPriceAgent, type PriceAgent } from "./agents/price";
-import { createUsageAgent, type UsageAgent } from "./agents/usage";
+import { MCPServerStreamableHttp } from "@openai/agents";
+import { createPriceAgent } from "./agents/price";
+import { createUsageAgent } from "./agents/usage";
+import { simulate } from "./lib/simulate";
+import { createProviderAgent } from "./agents/provider";
 
 const localMcpServers = [
   [5050, "Azure"],
@@ -8,30 +10,13 @@ const localMcpServers = [
   [5052, "GCP"],
 ] as const;
 
-async function simulate({
-  scenario,
-  mcp,
-  agents,
-}: {
-  scenario: string;
-  mcp: MCPServerStreamableHttp[];
-  agents: { price: PriceAgent; usage: UsageAgent };
-}) {
-  const [prices, usage] = await Promise.all([
-    run(agents.price, scenario),
-    run(agents.usage, scenario),
-  ]);
-
-  console.log("Price results:", prices);
-  console.log("Usage results:", usage);
-}
-
 async function main() {
   const mcp = localMcpServers.map(
     ([port, name]) =>
       new MCPServerStreamableHttp({
         url: `http://localhost:${port}/mcp`,
         name: `${name} MCP Server`,
+        cacheToolsList: true,
       })
   );
 
@@ -39,14 +24,19 @@ async function main() {
 
   try {
     const agents = {
+      provider: createProviderAgent({ mcp }),
       price: createPriceAgent({ mcp }),
       usage: createUsageAgent({ mcp }),
     };
 
-    const scenario = "";
+    const scenario = await Bun.file(
+      "../mcp/generated/scenarios/scenario-1.json"
+    ).text();
 
-    await simulate({ scenario, mcp, agents });
+    await simulate({ scenario, agents });
   } finally {
     await Promise.all(mcp.map((s) => s.close()));
   }
 }
+
+await main();

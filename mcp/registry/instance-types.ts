@@ -93,3 +93,8 @@ export const vmInstanceTypeMap = ({
 // 8	64      AWS, Azure, GCP *8/64
 // 24	64      AWS, Azure, GCP *16/64
 // 30	70      AWS, Azure, GCP *32/128
+
+const providers = ["aws", "azure", "gcp"] as const;
+// Relies on our sampling for even distrubution of VMs across providers.
+export const providerById = (id: string) =>
+  providers["ABCDEF".indexOf(id[0]) % providers.length];

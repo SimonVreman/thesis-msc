@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import { vmInstanceTypeMap } from "../registry/instance-types";
+import { providerById, vmInstanceTypeMap } from "../registry/instance-types";
 
 const outputDirectory = "./generated/scenarios";
 const scenarioCount = 100;
@@ -29,7 +29,7 @@ for (let scenarioIndex = 0; scenarioIndex < scenarioCount; scenarioIndex++) {
     const type = vmInstanceTypeMap({
       vcpu: vm.cores,
       memory: vm.memory,
-      provider: providers[(vmIndex + scenarioIndex) % providers.length],
+      provider: providerById(vm.id),
     });
 
     if (!type)

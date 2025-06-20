@@ -1,6 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { awsInstanceTypes } from "../registry/instance-types";
+import { prisma } from "../lib/prisma";
+import { textError, textSuccess } from "../lib/response";
+
+const toolname = <T extends string>(name: T) => `aws.${name}` as const;
 
 export function createAws() {
   const server = new McpServer({
@@ -9,7 +13,7 @@ export function createAws() {
   });
 
   server.tool(
-    "aws.available-instances",
+    toolname("available-instances"),
     "Get a list of available instance types with their vCPU and memory.",
     async () => ({
       content: awsInstanceTypes.map((instance) => ({
@@ -20,7 +24,7 @@ export function createAws() {
   );
 
   server.tool(
-    "aws.instance-price",
+    toolname("instance-price"),
     "Get the hourly price of a specific instance type.",
     { name: z.string() },
     async ({ name }) => {
@@ -35,6 +39,23 @@ export function createAws() {
         };
 
       return { content: [{ type: "text", text: price }] };
+    }
+  );
+
+  server.tool(
+    toolname("usage"),
+    "Get the usage of a specific machine.",
+    { id: z.string() },
+    async ({ id }) => {
+      const vm = await prisma.virtual_machine.findFirst({
+        where: { id: { equals: id } },
+      });
+
+      if (!vm) return textError(`ERR: machine with ID ${id} not found.`);
+
+      return textSuccess(
+        `Max CPU: ${vm.max_cpu}, Avg CPU: ${vm.avg_cpu}, P95 Max CPU: ${vm.p95_max_cpu}`
+      );
     }
   );
 

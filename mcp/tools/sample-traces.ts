@@ -4,15 +4,17 @@ import { readChunked } from "../lib/csvgz";
 // 0 = 0%, 5 = 9.4%, 31 = 50%, 63 = 100%
 const sample = 5;
 const file = +Bun.argv[Bun.argv.length - 1] || 1; // default to file 1 if no argument is given
-const path = `./traces/cpu/vm_cpu_readings-file-${file}-of-195.csv.gz`;
-const timeOffset = new Date(2019, 9, 1).getTime() / 1000;
 
-const base64Index = (line: string) =>
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(
-    line[0]
-  );
+const sampling = {
+  sample,
+  timeOffset: new Date(2019, 9, 1).getTime() / 1000,
+  isSampled: (line: string) =>
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(
+      line[0]
+    ) <= sample,
+};
 
-const isSampled = (line: string) => base64Index(line) <= sample;
+export const samplingConfiguration = sampling;
 
 const cpuLine = (line: string) => {
   const [t, vm, min, max, avg] = line.split(",");
@@ -29,7 +31,7 @@ const output = Bun.file(
 const writer = output.writer();
 
 await readChunked({
-  path,
+  path: `./traces/cpu/vm_cpu_readings-file-${file}-of-195.csv.gz`,
   chunkSize,
   callback: async (lines) => {
     const currentChunk = ++chunk;
@@ -38,10 +40,10 @@ await readChunked({
 
     for (const line of lines) {
       const trace = cpuLine(line);
-      if (!trace.vm || !isSampled(trace.vm)) continue; // skip traces without VM or not sampled
+      if (!trace.vm || !sampling.isSampled(trace.vm)) continue; // skip traces without VM or not sampled
 
       writer.write(
-        `${new Date((+trace.t + timeOffset) * 1000).toISOString()},${
+        `${new Date((+trace.t + sampling.timeOffset) * 1000).toISOString()},${
           trace.vm
         },${trace.min},${trace.max},${trace.avg}\n`
       );

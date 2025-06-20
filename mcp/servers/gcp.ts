@@ -1,11 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { PrismaClient } from "../generated/prisma";
 import { textError, textSuccess } from "../lib/response";
 import { gcpInstanceTypes } from "../registry/instance-types";
+import { prisma } from "../lib/prisma";
 
 const toolname = <T extends string>(name: T) => `gcp.${name}` as const;
-const prisma = new PrismaClient();
 
 export function createGCP() {
   const server = new McpServer({

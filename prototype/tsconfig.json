@@ -1,5 +1,4 @@
 {
-  "exclude": ["traces/**", "generated/traces/**"],
   "compilerOptions": {
     // Enable latest features
     "lib": ["ESNext", "DOM"],

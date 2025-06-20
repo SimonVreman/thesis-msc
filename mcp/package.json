@@ -6,8 +6,9 @@
   "scripts": {
     "start": "bun run index.ts",
     "inspect": "pnpx @modelcontextprotocol/inspector",
-    "tool:scenarios": "bun run tools/scenarios.ts",
-    "tool:sample-traces": "bun run tools/sample-traces.ts"
+    "tool:generate-scenarios": "bun run tools/generate-scenarios.ts",
+    "tool:sample-traces": "bun run tools/sample-traces.ts",
+    "tool:sample-vms": "bun run tools/sample-vms.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -44,3 +44,52 @@ export const instanceTypes = [
   ...azureInstanceTypes,
   ...gcpInstanceTypes,
 ] as const;
+
+const typeForSpecs = ({
+  types,
+  vcpu,
+  memory,
+}: {
+  types: readonly { name: string; vcpu: number; memory: number }[];
+  vcpu: number;
+  memory: number;
+}) => types.find((type) => type.vcpu === vcpu && type.memory === memory);
+
+export const vmInstanceTypeMap = ({
+  vcpu,
+  memory,
+  provider,
+}: {
+  vcpu: number;
+  memory: number;
+  provider: "aws" | "azure" | "gcp";
+}) => {
+  const types = {
+    aws: awsInstanceTypes,
+    azure: azureInstanceTypes,
+    gcp: gcpInstanceTypes,
+  }[provider];
+
+  const nearest =
+    (vcpu === 2 && memory === 32) || (vcpu === 4 && memory === 32)
+      ? { vcpu, memory: 16 }
+      : vcpu === 24 && memory === 64
+      ? { vcpu: 16, memory: 64 }
+      : vcpu === 30 && memory === 70
+      ? { vcpu: 32, memory: 128 }
+      : { vcpu, memory };
+
+  return typeForSpecs({ types, ...nearest });
+};
+
+// cpu, mem, availability
+// 2	2       AWS, GCP        *2/2
+// 2	4       AWS, Azure, GCP *2/4
+// 2	8       AWS, Azure, GCP *2/8
+// 2	32      AWS, Azure, GCP *2/16
+// 4	8       AWS, Azure, GCP *4/8
+// 4	32      AWS, Azure, GCP *4/16
+// 8	32      AWS, Azure, GCP *8/32
+// 8	64      AWS, Azure, GCP *8/64
+// 24	64      AWS, Azure, GCP *16/64
+// 30	70      AWS, Azure, GCP *32/128

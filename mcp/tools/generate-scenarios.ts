@@ -3,8 +3,7 @@ import { providerById, vmInstanceTypeMap } from "../registry/instance-types";
 
 const outputDirectory = "./generated/scenarios";
 const scenarioCount = 100;
-const maxScenarioSize = 10; // Maximum size of a scenario. Max sure this is not divisible by provider count to ensure variety.
-const providers = ["aws", "azure", "gcp"] as const;
+const maxScenarioSize = 10; // Maximum size of a scenario.
 
 type Scenario = {
   instances: { id: string; type: string }[];

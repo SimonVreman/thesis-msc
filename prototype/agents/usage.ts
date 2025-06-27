@@ -1,5 +1,6 @@
 import { Agent, type MCPServerStreamableHttp } from "@openai/agents";
 import { z } from "zod";
+import { agentConstants } from "./constants";
 
 const instructions = `
 You retrieve the usage of cloud virtual machines (instances) from different providers.
@@ -13,7 +14,7 @@ export function createUsageAgent({ mcp }: { mcp: MCPServerStreamableHttp[] }) {
   return new Agent({
     instructions,
     name: "Usage Retrieval Agent",
-    model: "gpt-4o-mini",
+    model: agentConstants.models.base,
     mcpServers: mcp,
     outputType: z.object({
       results: z.array(z.object({ id: z.string(), avgCpu: z.number() })),

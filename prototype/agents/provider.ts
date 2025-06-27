@@ -1,5 +1,6 @@
 import { Agent, type MCPServerStreamableHttp } from "@openai/agents";
 import { z } from "zod";
+import { agentConstants } from "./constants";
 
 const instructions = `
 You retrieve the provider of cloud virtual machines (instances) from a configuration.
@@ -17,7 +18,7 @@ export function createProviderAgent({
   return new Agent({
     instructions,
     name: "Provider Retrieval Agent",
-    model: "gpt-4o-mini",
+    model: agentConstants.models.base,
     mcpServers: mcp,
     outputType: z.object({
       results: z.array(

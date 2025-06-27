@@ -3,6 +3,8 @@ import type { PriceAgent } from "../agents/price";
 import type { UsageAgent } from "../agents/usage";
 import type { ProviderAgent } from "../agents/provider";
 
+const maxTurns = 20;
+
 export async function simulate({
   scenario,
   agents,
@@ -15,8 +17,8 @@ export async function simulate({
   );
 
   const [prices, usage] = await Promise.all([
-    run(agents.price, withProviders),
-    run(agents.usage, withProviders),
+    run(agents.price, withProviders, { maxTurns }),
+    run(agents.usage, withProviders, { maxTurns }),
   ]);
 
   console.log("Price results:", prices.finalOutput);

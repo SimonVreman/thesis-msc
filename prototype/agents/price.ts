@@ -1,5 +1,6 @@
 import { Agent, type MCPServerStreamableHttp } from "@openai/agents";
 import { z } from "zod";
+import { agentConstants } from "./constants";
 
 const instructions = `
 You retrieve the prices of cloud virtual machines (instances) from different providers.
@@ -12,7 +13,7 @@ export function createPriceAgent({ mcp }: { mcp: MCPServerStreamableHttp[] }) {
   return new Agent({
     instructions,
     name: "Price Retrieval Agent",
-    model: "gpt-4o-mini",
+    model: agentConstants.models.base,
     mcpServers: mcp,
     outputType: z.object({
       results: z.array(z.object({ id: z.string(), price: z.number() })),

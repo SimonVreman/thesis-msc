@@ -30,7 +30,7 @@ async function main() {
     };
 
     const scenario = await Bun.file(
-      "../mcp/generated/scenarios/scenario-1.json"
+      "../mcp/generated/scenarios/scenario-9.json"
     ).text();
 
     await simulate({ scenario, agents });

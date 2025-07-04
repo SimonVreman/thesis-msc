@@ -4,6 +4,7 @@ import { createAzure } from "./servers/azure";
 import { createAws } from "./servers/aws";
 import { createGCP } from "./servers/gcp";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { attachSanityHandler } from "./lib/sanity";
 
 const getTransport = () =>
   new StreamableHTTPServerTransport({
@@ -59,3 +60,8 @@ function startApp({
 startApp({ create: createAzure, port: 5050, name: "Azure" });
 startApp({ create: createAws, port: 5051, name: "AWS" });
 startApp({ create: createGCP, port: 5052, name: "GCP" });
+
+const sanity = express();
+sanity.use(express.json());
+attachSanityHandler(sanity);
+sanity.listen(5100, () => console.log("Sanity listening on port 5100"));

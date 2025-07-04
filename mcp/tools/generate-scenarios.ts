@@ -1,13 +1,10 @@
 import { prisma } from "../lib/prisma";
+import type { Scenario } from "../lib/scenario";
 import { providerById, vmInstanceTypeMap } from "../registry/instance-types";
 
 const outputDirectory = "./generated/scenarios";
 const scenarioCount = 100;
 const maxScenarioSize = 10; // Maximum size of a scenario.
-
-type Scenario = {
-  instances: { id: string; type: string }[];
-};
 
 let skip = 0;
 

@@ -17,7 +17,7 @@ export function createUsageAgent({ mcp }: { mcp: MCPServerStreamableHttp[] }) {
     model: agentConstants.models.base,
     mcpServers: mcp,
     outputType: z.object({
-      results: z.array(z.object({ id: z.string(), avgCpu: z.number() })),
+      results: z.array(z.object({ id: z.string(), p95Cpu: z.number() })),
     }),
   });
 }

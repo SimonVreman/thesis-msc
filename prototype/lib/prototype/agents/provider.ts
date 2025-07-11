@@ -21,9 +21,7 @@ export function createProviderAgent({
     model: agentConstants.models.base,
     mcpServers: mcp,
     outputType: z.object({
-      results: z.array(
-        z.object({ id: z.string(), type: z.string(), provider: z.string() })
-      ),
+      results: z.array(z.object({ id: z.string(), provider: z.string() })),
     }),
   });
 }

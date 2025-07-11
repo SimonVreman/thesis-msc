@@ -1,16 +1,18 @@
 import { fetch } from "bun";
+import type { Scenario } from "./types";
 
-export async function getSanity(scenario: string): Promise<{
+export async function getSanity(scenario: Scenario): Promise<{
   instances: {
     id: string;
     p95: number;
-    price: number;
+    price?: number;
     name: string;
+    provider: string;
   }[];
 }> {
   return await fetch("http://localhost:5100/sanity", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: scenario,
+    body: JSON.stringify(scenario),
   }).then((res) => res.json());
 }

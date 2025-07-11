@@ -20,8 +20,9 @@ export function attachSanityHandler(app: Express) {
       instances: [] as {
         id: string;
         p95: number;
-        price: number;
+        price?: number;
         name: string;
+        provider: string;
       }[],
     };
 
@@ -30,16 +31,22 @@ export function attachSanityHandler(app: Express) {
         where: { id: { equals: id } },
       });
 
+      if (!vm) {
+        console.warn(`VM with id ${id} not found`);
+        continue;
+      }
+
+      const provider = providerById(vm.id);
       const { name } = vmInstanceTypeMap({
-        vcpu: vm!.cores,
-        memory: vm!.memory,
-        provider: providerById(vm!.id),
+        vcpu: vm.cores,
+        memory: vm.memory,
+        provider,
       })!;
 
-      const price = instanceTypes.find((p) => p.name === type)!.price;
-      const p95 = vm!.p95_max_cpu;
+      const price = instanceTypes.find((p) => p.name === type)?.price;
+      const p95 = vm.p95_max_cpu;
 
-      sanity.instances.push({ id, p95, price, name });
+      sanity.instances.push({ id, p95, price, name, provider });
     }
 
     res.json(sanity);

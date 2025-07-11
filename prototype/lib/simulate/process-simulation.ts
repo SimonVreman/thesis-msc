@@ -1,27 +1,6 @@
+import { resultCSV } from "../csv/results";
 import { getSanity } from "../sanity";
 import type { SimulationBatchResult } from "./batched-simulation";
-
-const csvHeader = [
-  "scenario",
-  "id",
-  "p95Cpu",
-  "p95Cpu_aligns",
-  "price",
-  "price_aligns",
-  "wasteful",
-].join(",");
-
-const csvRow = (
-  ...args: [
-    batch: number,
-    id: string,
-    p95Cpu: number | undefined,
-    p95CpuAligns: boolean,
-    price: number | undefined,
-    priceAligns: boolean,
-    wasteful: boolean | undefined
-  ]
-) => args.map((v) => v ?? "null").join(",");
 
 function getFileName() {
   const datetime = new Date().toISOString().replace(/[^\d]/g, "");
@@ -31,14 +10,10 @@ function getFileName() {
   )}-simulation-results.csv`;
 }
 
-function aligns(a: number | undefined, b: number) {
-  return a != null && Math.abs(a - b) < 0.1;
-}
-
 export function createResultWriter() {
   const outFile = Bun.file(getFileName());
   const out = outFile.writer();
-  out.write(csvHeader + "\n");
+  out.write(resultCSV.getHeader());
   return out;
 }
 
@@ -50,30 +25,49 @@ export async function processBatch({
   out: Bun.FileSink;
 }) {
   const batch = await Promise.all(
-    bareBatch.map(async (b) => [b, await getSanity(b.scenario)] as const)
+    bareBatch.map(
+      async (b) =>
+        [
+          b,
+          ...(await Promise.all([
+            getSanity(b.scenario),
+            getSanity({
+              instances:
+                b.result
+                  ?.filter((r) => r.newType != null)
+                  .map((r) => ({ id: r.id, type: r.newType! })) ?? [],
+            }),
+          ])),
+        ] as const
+    )
   );
 
-  for (const [scenario, sanity] of batch) {
+  for (const [scenario, sanity, newSanity] of batch) {
     if (!scenario.success) {
       console.log(`Simulation ${scenario.id} failed`);
       continue;
     }
 
     for (const instance of scenario.result) {
-      const instanceSanity = sanity.instances.find(
-        (i) => i.id === instance.id
-      )!;
+      const s = sanity.instances.find((i) => i.id === instance.id)!;
+      const newS = newSanity.instances.find((i) => i.id === instance.id);
 
       out.write(
-        csvRow(
-          scenario.id,
-          instance.id,
-          instance.p95Cpu,
-          aligns(instance.p95Cpu, instanceSanity.p95),
-          instance.price,
-          aligns(instance.price, instanceSanity.price),
-          instance.wasteful
-        ) + "\n"
+        resultCSV.getRow({
+          scenario: scenario.id,
+          id: instance.id,
+          type: instance.type,
+          provider: instance.provider,
+          providerActual: s.provider,
+          p95Cpu: instance.p95Cpu,
+          p95CpuActual: s.p95,
+          price: instance.price,
+          priceActual: s.price ?? null,
+          wasteful: instance.wasteful,
+          newType: instance.newType,
+          newPrice: instance.newPrice,
+          newPriceActual: newS?.price ?? null,
+        })
       );
     }
   }

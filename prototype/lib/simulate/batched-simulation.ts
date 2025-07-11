@@ -1,9 +1,10 @@
 import type { Agents } from "../prototype/agents/constants";
 import { runPrototype } from "../prototype/prototype";
+import type { Scenario } from "../types";
 
 export type SimulationBatchResult = ({
   id: number;
-  scenario: string;
+  scenario: Scenario;
 } & (
   | {
       success: true;
@@ -29,18 +30,20 @@ export async function batchedSimulation({
     batch: SimulationBatchResult;
     index: number;
   }) => Promise<void>;
-  content: (id: number) => Promise<string>;
+  content: (id: number) => Promise<Scenario>;
 }) {
-  for (let chunk = 0; chunk < Math.ceil(maxIndex / chunkSize); chunk++) {
+  for (let index = 0; index < maxIndex; index += chunkSize) {
     const result = await runBatch({
       agents,
-      scenarios: [...Array(chunkSize)].map((_, i) => ({
-        id: chunk * chunkSize + i,
-        content: content(chunk * chunkSize + i),
-      })),
+      scenarios: [...Array(Math.min(maxIndex - index, chunkSize))].map(
+        (_, i) => ({
+          id: index + i,
+          content: content(index + i),
+        })
+      ),
     });
 
-    await process({ batch: result, index: chunk });
+    await process({ batch: result, index: index / chunkSize });
   }
 }
 
@@ -48,7 +51,7 @@ async function runBatch({
   scenarios,
   agents,
 }: {
-  scenarios: { id: number; content: Promise<string> }[];
+  scenarios: { id: number; content: Promise<Scenario> }[];
   agents: Agents;
 }): Promise<SimulationBatchResult> {
   return await Promise.all(

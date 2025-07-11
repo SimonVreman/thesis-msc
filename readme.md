@@ -11,3 +11,7 @@ Install dependencies using `bun install` and run using `bun start`. Requires the
 ## MCP
 
 Install dependencies using `bun install` and run using `bun start`. Relies on import (a sample of) the Azure Public Dataset in a local Postgres database using the command line tools included. There is also a tool to generate the scenarios in this project. The commands for this can be found in `mcp/package.json`.
+
+## Stats
+
+Python project for analysis of simulation results and generating figures.

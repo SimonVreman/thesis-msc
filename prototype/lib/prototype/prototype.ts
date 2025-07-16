@@ -52,21 +52,41 @@ export async function runPrototype({
 
   debug("Got waste determination");
 
-  const recommendation = await run(
-    agents.recommendation,
+  const downsize = await run(
+    agents.downsize,
     JSON.stringify(
       mergeById(
         scenario.instances,
         providers.finalOutput.results,
         waste.finalOutput.results
       )
+        .filter((r) => r.wasteful)
+        .map(({ id, type, provider }) => ({ id, type, provider }))
     )
   );
 
-  if (recommendation.finalOutput == null)
-    throw new Error("Recommendation agent failed to return output");
+  if (downsize.finalOutput == null)
+    throw new Error("Downsize agent failed to return output");
 
-  debug("Got recommendations");
+  debug("Got downsize instances");
+
+  const recommendationPrices = await run(
+    agents.price,
+    JSON.stringify(
+      mergeById(
+        scenario.instances,
+        providers.finalOutput.results,
+        downsize.finalOutput.results
+      )
+        .map((r) => ({ id: r.id, type: r.newType, provider: r.provider }))
+        .filter((r) => r.type != null)
+    )
+  );
+
+  if (recommendationPrices.finalOutput == null)
+    throw new Error("Recommendation prices agent failed to return output");
+
+  debug("Got recommendation prices");
 
   return mergeById(
     scenario.instances,
@@ -74,6 +94,9 @@ export async function runPrototype({
     prices.finalOutput.results,
     usage.finalOutput.results,
     waste.finalOutput.results,
-    recommendation.finalOutput.results
+    downsize.finalOutput.results,
+    recommendationPrices.finalOutput.results.map(
+      ({ price: newPrice, ...r }) => ({ ...r, newPrice })
+    )
   );
 }

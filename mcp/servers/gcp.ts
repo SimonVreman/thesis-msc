@@ -18,7 +18,11 @@ export function createGCP() {
     async () => ({
       content: gcpInstanceTypes.map((instance) => ({
         type: "text",
-        text: `NAME: ${instance.name}; VCPU: ${instance.vcpu}; MEMORY: ${instance.memory};`,
+        text: `NAME: ${instance.name}; VCPU: ${JSON.stringify(
+          instance.vcpu
+        )}; MEMORY: ${JSON.stringify(instance.memory)} ${
+          typeof instance.memory === "object" ? "per core" : ""
+        };`,
       })),
     })
   );

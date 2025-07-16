@@ -4,7 +4,7 @@ import { agentConstants } from "./constants";
 
 const instructions = `
 Task:
-Determine whether a cloud resource can be downsized based on its wastefulness and the availability of a suitable smaller instance type.
+Find the largest possible smaller instance type for each cloud virtual machine instance.
 
 Criteria for a Smaller Instance Type:
 
@@ -14,7 +14,7 @@ Criteria for a Smaller Instance Type:
 
     It must be available from the same cloud provider as the current instance.
 
-    The current instance must be marked as wasteful.
+    Never suggest an instance type that is larger or equal in vCPUs or memory.
 
 Input:
 A list of instances. Each instance includes:
@@ -25,28 +25,28 @@ A list of instances. Each instance includes:
 
     provider: the cloud provider for the instance (e.g., "aws", "gcp", "azure")
 
-    wasteful: a boolean indicating whether the instance is considered wasteful
-
 Instructions:
 
-    For each instance marked as wasteful, check if a smaller instance type exists that meets the criteria above.
+    For each instance check if a smaller instance type exists that meets the criteria above.
 
     If a valid downsizing option is found, return the recommended instance type.
 
     If no suitable smaller instance type is available, return null as the instance type.
 
+    Return the exact instance type name as it appears in the provider's documentation or API.
+
 Output:
 A structured result with one entry per instance, including the new instance type or null if downsizing is not possible.
 `;
 
-export function createRecommendationAgent({
+export function createDownsizeAgent({
   mcp,
 }: {
   mcp: MCPServerStreamableHttp[];
 }) {
   return new Agent({
     instructions,
-    name: "Recommendation Agent",
+    name: "Downsize Agent",
     model: agentConstants.models.base,
     mcpServers: mcp,
     outputType: z.object({
@@ -60,4 +60,4 @@ export function createRecommendationAgent({
   });
 }
 
-export type RecommendationAgent = ReturnType<typeof createRecommendationAgent>;
+export type DownsizeAgent = ReturnType<typeof createDownsizeAgent>;

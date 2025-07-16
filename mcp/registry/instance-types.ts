@@ -37,6 +37,12 @@ export const gcpInstanceTypes = [
   { name: "n2-standard-16", vcpu: 16, memory: 64, price: 0.8348 },
   { name: "n2-standard-32", vcpu: 32, memory: 128, price: 1.6697 },
   { name: "n2-standard-48", vcpu: 48, memory: 192, price: 2.5045 },
+  {
+    name: "n4-custom",
+    vcpu: { min: 2, max: 80, step: 2 },
+    memory: { min: 2, max: 8, step: 0.25 },
+    price: { core: 0.0377, memory: 0.0043 },
+  },
 ] as const;
 
 export const instanceTypes = [
@@ -50,7 +56,11 @@ const typeForSpecs = ({
   vcpu,
   memory,
 }: {
-  types: readonly { name: string; vcpu: number; memory: number }[];
+  types: readonly {
+    name: string;
+    vcpu: number | { min: number; max: number; step: number };
+    memory: number | { min: number; max: number; step: number };
+  }[];
   vcpu: number;
   memory: number;
 }) => types.find((type) => type.vcpu === vcpu && type.memory === memory);

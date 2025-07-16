@@ -3,7 +3,7 @@ import type { Scenario } from "../lib/scenario";
 import { providerById, vmInstanceTypeMap } from "../registry/instance-types";
 
 const outputDirectory = "./generated/scenarios";
-const scenarioCount = 100;
+const scenarioCount = 1000;
 const maxScenarioSize = 10; // Maximum size of a scenario.
 
 let skip = 0;
@@ -16,7 +16,7 @@ for (let scenarioIndex = 0; scenarioIndex < scenarioCount; scenarioIndex++) {
     skip,
     take: scenarioSize,
     orderBy: { created: "asc" },
-    where: { OR: [{ cores: { not: 2 } }, { memory: { not: 2 } }] }, // TODO not available in all providers, should be
+    where: { cores: { gt: 2 } }, // Filter for VMs with more than 2 cores, not relevant as there is not CPU downsize.
   });
 
   for (let vmIndex = 0; vmIndex < vms.length; vmIndex++) {

@@ -20,6 +20,7 @@ export function attachSanityHandler(app: Express) {
       instances: [] as {
         id: string;
         p95: number;
+        avg: number;
         price?: number;
         name: string;
         provider: string;
@@ -45,8 +46,16 @@ export function attachSanityHandler(app: Express) {
 
       const price = instanceTypes.find((p) => p.name === type)?.price;
       const p95 = vm.p95_max_cpu;
+      const avg = vm.avg_cpu;
 
-      sanity.instances.push({ id, p95, price, name, provider });
+      sanity.instances.push({
+        id,
+        p95,
+        avg,
+        price: typeof price === "object" ? undefined : price,
+        name,
+        provider,
+      });
     }
 
     res.json(sanity);

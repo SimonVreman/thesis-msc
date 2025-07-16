@@ -1,3 +1,4 @@
+import type { DownsizeAgent } from "./downsize";
 import type { PriceAgent } from "./price";
 import type { ProviderAgent } from "./provider";
 import type { RecommendationAgent } from "./recommendation";
@@ -15,5 +16,6 @@ export type Agents = {
   usage: UsageAgent;
   provider: ProviderAgent;
   waste: WasteAgent;
+  downsize: DownsizeAgent;
   recommendation: RecommendationAgent;
 };

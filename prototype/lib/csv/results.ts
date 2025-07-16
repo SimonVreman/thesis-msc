@@ -6,8 +6,8 @@ const row = z.object({
   type: z.string(),
   provider: z.string().nullable(),
   providerActual: z.string(),
-  p95Cpu: z.number().nullable(),
-  p95CpuActual: z.number(),
+  avgCpu: z.number().nullable(),
+  avgCpuActual: z.number(),
   price: z.number().nullable(),
   priceActual: z.number().nullable(),
   wasteful: z.boolean(),
@@ -23,5 +23,6 @@ const keys = Object.keys(row.shape).sort() as (keyof ResultRow)[];
 export const resultCSV = {
   getHeader: () => keys.join(",") + "\n",
   getRow: (row: ResultRow) =>
-    keys.map((v) => row[v] ?? "null").join(",") + "\n",
+    keys.map((v) => new String(row[v] || "null").replace(",", " -")).join(",") +
+    "\n",
 };

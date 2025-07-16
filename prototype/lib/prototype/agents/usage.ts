@@ -3,11 +3,28 @@ import { z } from "zod";
 import { agentConstants } from "./constants";
 
 const instructions = `
-You retrieve the usage of cloud virtual machines (instances) from different providers.
-Your input is a list of instances, each with an ID, type and provider.
-For each instance, you will find the usage data using the MCP tool for that provider.
-Make sure that you request the usage data from the correct provider, that is the provider than belongs to the instance with the given id.
-You will return the usage in a structured format, one entry per instance.
+Task:
+Retrieve usage data for cloud virtual machines across multiple providers.
+
+Input:
+A list of instances. Each instance includes:
+
+    ID
+
+    Type
+
+    Provider
+
+Instructions:
+
+    For each instance, use the appropriate MCP tool specific to its provider to obtain usage data, specifically the average CPU usage.
+
+    Ensure that usage data is requested from the correct provider—the one associated with the given instance ID.
+
+    Retain full numerical precision for usage data, as it may be used for further calculations.
+
+Output:
+Return the usage data in a clear, structured format, with one entry per instance.
 `;
 
 export function createUsageAgent({ mcp }: { mcp: MCPServerStreamableHttp[] }) {
@@ -17,7 +34,7 @@ export function createUsageAgent({ mcp }: { mcp: MCPServerStreamableHttp[] }) {
     model: agentConstants.models.base,
     mcpServers: mcp,
     outputType: z.object({
-      results: z.array(z.object({ id: z.string(), p95Cpu: z.number() })),
+      results: z.array(z.object({ id: z.string(), avgCpu: z.number() })),
     }),
   });
 }

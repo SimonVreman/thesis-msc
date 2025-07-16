@@ -3,9 +3,24 @@ import { z } from "zod";
 import { agentConstants } from "./constants";
 
 const instructions = `
-You determine which instances are wasteful, that is, having low cpu usage.
-Your input is a list of instances, each with an ID, and p95 max cpu.
-You will return the determinations in a structured format, one entry per instance.
+Task:
+Identify wasteful cloud virtual machine instances based on CPU usage.
+
+Input:
+A list of instances. Each instance includes:
+
+    id
+
+    avgCpu (average CPU usage)
+
+Instructions:
+
+    For each instance, determine whether it is wasteful—defined as having low average CPU usage, such as less than 10%.
+
+    Base your assessment on the provided avgCpu value.
+
+Output:
+Return the results in a clear, structured format, with one entry per instance indicating whether it is considered wasteful.
 `;
 
 export function createWasteAgent() {

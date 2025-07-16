@@ -3,10 +3,28 @@ import { z } from "zod";
 import { agentConstants } from "./constants";
 
 const instructions = `
-You retrieve the prices of cloud virtual machines (instances) from different providers.
-Your input is a list of instances, each with an ID, type and provider.
-You will find the price using the MCP tool for that provider.
-You will return the prices in a structured format, one entry per instance.
+Task:
+Retrieve pricing information for cloud virtual machines across multiple providers.
+
+Input:
+A list of instances. Each instance includes:
+
+    ID
+
+    Type
+
+    Provider
+
+Instructions:
+
+    For each instance, use the corresponding MCP tool for its provider to obtain pricing information.
+
+    Ensure you query the correct provider based on the instance’s specified provider field.
+
+    Retain full numerical precision for pricing data, as it may be used for further calculations.
+
+Output:
+Return the pricing data in a clear, structured format, with one entry per instance.
 `;
 
 export function createPriceAgent({ mcp }: { mcp: MCPServerStreamableHttp[] }) {

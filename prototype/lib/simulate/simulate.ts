@@ -6,6 +6,7 @@ import { createWasteAgent } from "../prototype/agents/waste";
 import { batchedSimulation } from "./batched-simulation";
 import { createResultWriter, processBatch } from "./process-simulation";
 import { createRecommendationAgent } from "../prototype/agents/recommendation";
+import { createDownsizeAgent } from "../prototype/agents/downsize";
 
 const localMcpServers = [
   [5050, "Azure"],
@@ -42,6 +43,7 @@ export const simulate = async () =>
       usage: createUsageAgent({ mcp }),
       waste: createWasteAgent(),
       recommendation: createRecommendationAgent({ mcp }),
+      downsize: createDownsizeAgent({ mcp }),
     };
 
     console.log("Starting simulation...");
@@ -51,7 +53,7 @@ export const simulate = async () =>
     await batchedSimulation({
       agents,
       chunkSize: 5,
-      maxIndex: 5,
+      maxIndex: 10,
       content: async (id) =>
         await Bun.file(`../mcp/generated/scenarios/scenario-${id}.json`).json(),
       process: async ({ batch, index }) => {

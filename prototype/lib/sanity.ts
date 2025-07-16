@@ -5,6 +5,7 @@ export async function getSanity(scenario: Scenario): Promise<{
   instances: {
     id: string;
     p95: number;
+    avg: number;
     price?: number;
     name: string;
     provider: string;

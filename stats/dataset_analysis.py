@@ -4,7 +4,7 @@ import pandas as pd
 import scienceplots
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.figure as pltfg
+from lib.save_figure import save_figure
 
 plt.style.use(["science", "no-latex"])
 
@@ -59,7 +59,7 @@ def load_azure():
     }
 
 
-def printBucketCounts(df):
+def print_bucket_counts(df):
     """
     Print the number of rows in each bucket for vmcorecountbucket and vmmemorybucket.
     """
@@ -72,17 +72,7 @@ def printBucketCounts(df):
         print(f"{name}: {len(group)}")
 
 
-def saveFigure(name: str, figure: pltfg.Figure, size: tuple = (4, 3)):
-    """
-    Save the current figure thesis folder
-    """
-    figure.set_size_inches(size)
-    figure.savefig(
-        f"/Users/simon2/Documents/thesis-msc/figures/{name}.svg", dpi=1200, format="svg"
-    )
-
-
-def plotBucketBars(df):
+def plot_bucket_bars(df):
     # Prepare data for plotting
     core_buckets = sorted(df["vmcorecountbucket"].unique())
     memory_buckets = sorted(df["vmmemorybucket"].unique())
@@ -102,10 +92,10 @@ def plotBucketBars(df):
     plt.ylabel("Number of VMs")
     plt.title("VM Memory by Core Count")
     plt.legend(title="Memory Buckets (GB)", loc="center right")
-    saveFigure("core-memory-buckets", plt.gcf(), (6, 4))
+    save_figure("core-memory-buckets", plt.gcf(), (6, 4))
 
 
-def plotBucketPies(df):
+def plot_bucket_pies(df):
     # Prepare data for plotting
     core_buckets = df["vmcorecountbucket"].value_counts().sort_index()
     memory_buckets = df["vmmemorybucket"].value_counts().sort_index()
@@ -134,13 +124,13 @@ def plotBucketPies(df):
 
     plotPie(core_buckets, "Core Buckets (Count)")
     plt.title("Core Count Distribution", pad=10)
-    saveFigure("core-buckets-pie", plt.gcf())
+    save_figure("core-buckets-pie", plt.gcf())
     plotPie(memory_buckets, "Memory Buckets (GB)")
     plt.title("Memory Distribution", pad=10)
-    saveFigure("memory-buckets-pie", plt.gcf())
+    save_figure("memory-buckets-pie", plt.gcf())
 
 
-def printQuantileAvgCpu(df):
+def print_quantile_avg_cpu(df):
     # Calculate and print quantile summary
     avg_cpu = df["avgcpu"]
     quantiles = avg_cpu.quantile([0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99])
@@ -149,7 +139,7 @@ def printQuantileAvgCpu(df):
         print(f"{int(quantile * 100)}th Percentile: {(value):.2f}%")
 
 
-def plotInteractivityPie(df):
+def plot_interactivity_pie(df):
     # Calculate and plot interactivity summary
     data = df.groupby("vmcategory")["corehour"].sum()
     plt.figure()
@@ -168,7 +158,7 @@ def plotInteractivityPie(df):
         bbox_to_anchor=(1.8, 0.5),
     )
     plt.title("Interactivity Categories", pad=10)
-    saveFigure("interactivity", plt.gcf())
+    save_figure("interactivity", plt.gcf())
 
 
 #
@@ -176,7 +166,7 @@ def plotInteractivityPie(df):
 #
 
 
-def plotCpuComp(df, azure):
+def plot_cpu_comp(df, azure):
     plt.figure()
 
     for col, label in [("avgcpu", "Average"), ("p95maxcpu", "P95 Max")]:
@@ -191,10 +181,10 @@ def plotCpuComp(df, azure):
     plt.ylabel("CDF")
     plt.title("CPU Utilization")
     plt.legend(loc="lower right", handlelength=0.9)
-    saveFigure("cpu-cdf-comparison", plt.gcf(), (3, 3))
+    save_figure("cpu-cdf-comparison", plt.gcf(), (3, 3))
 
 
-def plotLifetimeComp(df, azure):
+def plot_lifetime_comp(df, azure):
     plt.figure()
 
     data = df["lifetime"].dropna().sort_values()
@@ -209,10 +199,10 @@ def plotLifetimeComp(df, azure):
     plt.title("VM Lifetime")
     plt.xlim(0, 200)
     plt.legend(loc="lower right", handlelength=0.9)
-    saveFigure("lifetime-cdf-comparison", plt.gcf(), (3, 3))
+    save_figure("lifetime-cdf-comparison", plt.gcf(), (3, 3))
 
 
-def plotMemoryComp(df, azure):
+def plot_memory_comp(df, azure):
     data = (
         (df["vmmemorybucket"].value_counts(normalize=True) * 100)
         .sort_index()
@@ -237,10 +227,10 @@ def plotMemoryComp(df, azure):
         columnspacing=0.6,
     )
 
-    saveFigure("memory-buckets-comparison", plt.gcf(), (3, 3))
+    save_figure("memory-buckets-comparison", plt.gcf(), (3, 3))
 
 
-def plotCoreComp(df, azure):
+def plot_core_comp(df, azure):
     data = (
         (df["vmcorecountbucket"].value_counts(normalize=True) * 100)
         .sort_index()
@@ -265,16 +255,16 @@ def plotCoreComp(df, azure):
         columnspacing=0.6,
     )
 
-    saveFigure("core-buckets-comparison", plt.gcf(), (3, 3))
+    save_figure("core-buckets-comparison", plt.gcf(), (3, 3))
 
 
 loaded = load()
 loaded_azure = load_azure()
-plotBucketBars(loaded)
-# plotBucketPies(loaded)
-# printQuantileAvgCpu(loaded)
-# plotInteractivityPie(loaded)
-# plotCpuComp(loaded, loaded_azure)
-plotLifetimeComp(loaded, loaded_azure)
-# plotMemoryComp(loaded, loaded_azure)
-# plotCoreComp(loaded, loaded_azure)
+# plot_bucket_bars(loaded)
+# plot_bucket_pies(loaded)
+# print_quantile_avg_cpu(loaded)
+# plot_interactivity_pie(loaded)
+# plot_cpu_comp(loaded, loaded_azure)
+# plot_lifetime_comp(loaded, loaded_azure)
+# plot_memory_comp(loaded, loaded_azure)
+# plot_core_comp(loaded, loaded_azure)

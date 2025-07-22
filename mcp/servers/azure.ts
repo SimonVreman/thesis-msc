@@ -5,6 +5,8 @@ import { textError, textSuccess } from "../lib/response";
 import { prisma } from "../lib/prisma";
 
 const toolname = <T extends string>(name: T) => `azure.${name}` as const;
+const tooldescription = <T extends string>(description: T) =>
+  `Azure: ${description}` as const;
 
 export function createAzure() {
   const server = new McpServer({
@@ -14,7 +16,9 @@ export function createAzure() {
 
   server.tool(
     toolname("instances"),
-    "Overview of available instance types with vCPU and memory.",
+    tooldescription(
+      "Overview of available instance types with vCPU and memory."
+    ),
     async () => ({
       content: azureInstanceTypes.map((instance) => ({
         type: "text",
@@ -25,7 +29,7 @@ export function createAzure() {
 
   server.tool(
     toolname("price"),
-    "Price per hour of a specific instance type.",
+    tooldescription("Price per hour of a specific instance type."),
     { type: z.string() },
     async ({ type }) => {
       const price = azureInstanceTypes
@@ -34,13 +38,13 @@ export function createAzure() {
 
       if (price == null) return textError("Type not found.");
 
-      return { content: [{ type: "text", text: price }] };
+      return textSuccess(JSON.stringify({ price }));
     }
   );
 
   server.tool(
     toolname("usage"),
-    "Usage by machine ID.",
+    tooldescription("Usage by machine ID."),
     { id: z.string() },
     async ({ id }) => {
       const vm = await prisma.virtual_machine.findFirst({
@@ -51,7 +55,11 @@ export function createAzure() {
         return textError(`ERR: machine with ID ${id} not found.`);
 
       return textSuccess(
-        `Max CPU: ${vm.max_cpu}, Avg CPU: ${vm.avg_cpu}, P95 Max CPU: ${vm.p95_max_cpu}`
+        JSON.stringify({
+          maxCpu: vm.max_cpu,
+          averageCpu: vm.avg_cpu,
+          p95MaxCpu: vm.p95_max_cpu,
+        })
       );
     }
   );

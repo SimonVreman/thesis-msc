@@ -11,13 +11,11 @@ A list of instances. Each instance includes:
 
     ID
 
-    Type
-
     Provider
 
 Instructions:
 
-    For each instance, use the appropriate MCP tool specific to its provider to obtain usage data, specifically the average CPU usage.
+    For each instance, use the appropriate MCP tool specific to its provider to obtain usage data, specifically the average CPU usage (avgCpu, or avg_cpu).
 
     Ensure that usage data is requested from the correct provider—the one associated with the given instance ID.
 

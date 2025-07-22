@@ -1,5 +1,4 @@
 import { MCPServerStreamableHttp } from "@openai/agents";
-import { createProviderAgent } from "../prototype/agents/provider";
 import { createPriceAgent } from "../prototype/agents/price";
 import { createUsageAgent } from "../prototype/agents/usage";
 import { createWasteAgent } from "../prototype/agents/waste";
@@ -7,6 +6,7 @@ import { batchedSimulation } from "./batched-simulation";
 import { createResultWriter, processBatch } from "./process-simulation";
 import { createRecommendationAgent } from "../prototype/agents/recommendation";
 import { createDownsizeAgent } from "../prototype/agents/downsize";
+import { createOfferingAgent } from "../prototype/agents/offering";
 
 const localMcpServers = [
   [5050, "Azure"],
@@ -38,12 +38,12 @@ async function withMcp(
 export const simulate = async () =>
   await withMcp(async (mcp) => {
     const agents = {
-      provider: createProviderAgent({ mcp }),
       price: createPriceAgent({ mcp }),
       usage: createUsageAgent({ mcp }),
       waste: createWasteAgent(),
       recommendation: createRecommendationAgent({ mcp }),
-      downsize: createDownsizeAgent({ mcp }),
+      downsize: createDownsizeAgent(),
+      offering: await createOfferingAgent({ mcp }),
     };
 
     console.log("Starting simulation...");
@@ -52,7 +52,7 @@ export const simulate = async () =>
 
     await batchedSimulation({
       agents,
-      chunkSize: 5,
+      chunkSize: 50,
       maxIndex: 10,
       content: async (id) =>
         await Bun.file(`../mcp/generated/scenarios/scenario-${id}.json`).json(),
@@ -61,10 +61,12 @@ export const simulate = async () =>
           `Batch ${index} completed in ${(
             (performance.now() - lastStart) /
             1000
-          ).toFixed(3)}s, processing results...`
+          ).toFixed(3)}s, ${
+            batch.filter((s) => !s.success).length
+          } failures, processing results...`
         );
-        lastStart = performance.now();
 
+        lastStart = performance.now();
         await processBatch({ batch, out });
 
         console.log(
@@ -73,6 +75,7 @@ export const simulate = async () =>
             1000
           ).toFixed(3)}s`
         );
+
         lastStart = performance.now();
       },
     });

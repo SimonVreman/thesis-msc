@@ -5,6 +5,7 @@ export const Scenario = z.object({
     z.object({
       id: z.string(),
       type: z.string(),
+      provider: z.string(),
     })
   ),
 });

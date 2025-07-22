@@ -3,7 +3,7 @@ import type { Scenario } from "../lib/scenario";
 import { providerById, vmInstanceTypeMap } from "../registry/instance-types";
 
 const outputDirectory = "./generated/scenarios";
-const scenarioCount = 1000;
+const scenarioCount = 10000;
 const maxScenarioSize = 10; // Maximum size of a scenario.
 
 let skip = 0;
@@ -21,11 +21,12 @@ for (let scenarioIndex = 0; scenarioIndex < scenarioCount; scenarioIndex++) {
 
   for (let vmIndex = 0; vmIndex < vms.length; vmIndex++) {
     const vm = vms[vmIndex];
+    const provider = providerById(vm.id);
 
     const type = vmInstanceTypeMap({
       vcpu: vm.cores,
       memory: vm.memory,
-      provider: providerById(vm.id),
+      provider,
     });
 
     if (!type)
@@ -33,7 +34,7 @@ for (let scenarioIndex = 0; scenarioIndex < scenarioCount; scenarioIndex++) {
         `No instance type found for VM ${vm.id} with vCPU ${vm.cores} and memory ${vm.memory}`
       );
 
-    scenario.instances.push({ id: vm.id, type: type.name });
+    scenario.instances.push({ id: vm.id, type: type.name, provider });
   }
 
   const scenarioFileName = `${outputDirectory}/scenario-${scenarioIndex}.json`;

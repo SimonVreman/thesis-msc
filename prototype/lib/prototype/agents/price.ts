@@ -34,7 +34,9 @@ export function createPriceAgent({ mcp }: { mcp: MCPServerStreamableHttp[] }) {
     model: agentConstants.models.base,
     mcpServers: mcp,
     outputType: z.object({
-      results: z.array(z.object({ id: z.string(), price: z.number() })),
+      results: z.array(
+        z.object({ id: z.string(), type: z.string(), price: z.number() })
+      ),
     }),
   });
 }

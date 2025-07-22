@@ -4,6 +4,7 @@ from lib.provider import normalize_provider
 from typing import Callable
 import sys
 from statsmodels.stats.proportion import proportion_confint
+from lib.downsize import downsized
 
 # pylint: disable=unused-import
 import scienceplots
@@ -46,13 +47,23 @@ df["wastefulActual"] = df["avgCpuActual"] < 10
 # Clean up wasteful column, NaN to False
 df["wasteful"] = df["wasteful"].fillna(False)
 
+
+# Add actual downsize column
+def row_downsized(row, field: str):
+    downsized_type = downsized(row["type"])
+    if downsized_type is not None:
+        return downsized_type[field]
+    return None
+
+
+df["newTypeActual"] = df.apply(lambda row: row_downsized(row, "name"), axis=1)  # type: ignore
+df["newPriceActual"] = df.apply(lambda row: row_downsized(row, "price"), axis=1)  # type: ignore
+
 # Add reduction metric
 df["savings"] = df.apply(
     lambda row: (
         row["priceActual"] - row["newPriceActual"]
-        if pd.notnull(row["newPriceActual"])
-        and row["wastefulActual"]
-        and row["wasteful"]
+        if row["newType"] == row["newTypeActual"]
         else 0
     ),
     axis=1,
@@ -60,7 +71,7 @@ df["savings"] = df.apply(
 
 # Add scenario size
 df["scenarioSize"] = df["scenario"] % 10 + 1
-# df = df[df["scenarioSize"] == 5]
+# df = df[df["scenarioSize"] == 10]
 
 
 def by_provider(
@@ -109,18 +120,6 @@ def metrics_for_series(classified_series: pd.Series, true_series: pd.Series):
 
 by_provider(
     [df],
-    "provider success rate",
-    lambda df: metrics_for_series(
-        ~(df["provider"].isna()),
-        (df["provider"] == df["providerActual"]) | df["provider"].isna(),
-    ),
-)
-
-
-df_provider_correct = df[df["provider"] == df["providerActual"]].reset_index()
-
-by_provider(
-    [df_provider_correct, df],
     "price success rate: when provider correct / overall",
     lambda df: metrics_for_series(
         ~(df["price"].isna()),
@@ -129,7 +128,7 @@ by_provider(
 )
 
 by_provider(
-    [df_provider_correct, df],
+    [df],
     "usage success rate: when provider correct / overall",
     lambda df: metrics_for_series(
         ~(df["avgCpu"].isna()),
@@ -150,18 +149,19 @@ by_provider(
 
 
 df_wasteful_correct = df[df["wasteful"] == df["wastefulActual"]].reset_index()
+df_downsize_correct = df[df["newType"] == df["newTypeActual"]].reset_index()
 
 by_provider(
-    [df_wasteful_correct, df],
-    "savings fraction: when wasteful correct / overall",
-    lambda df: f"{df["savings"].sum() / df["priceActual"].sum() * 100:.2f}%",
+    [df_downsize_correct, df_wasteful_correct, df],
+    "savings fraction: when downsize correct / wasteful correct / overall",
+    lambda df: f"{(df["savings"].sum() / df["priceActual"].sum() * 100 if df["priceActual"].sum() > 0 else 0):.2f}%",
 )
 
 
 # Charts
 
 
-def plot_metric_by_size(metric_col, actual_col, margin, name):
+def plot_metric_by_size(title, df, metric_col, actual_col, margin, name):
     """
     Plots accuracy, precision, and recall for a given metric by scenario size with error bars in three subplots.
     metric_col: column with predicted values (e.g., "price", "avgCpu", "wasteful")
@@ -222,8 +222,11 @@ def plot_metric_by_size(metric_col, actual_col, margin, name):
     metric_names = metrics.keys()
     titles = ["Accuracy", "Precision", "Recall"]
 
+    # Add a super-title above all three charts
+    fig.suptitle(title, fontsize=14)
+
     i = 0
-    for ax, metric, title in zip(axes, metric_names, titles):
+    for ax, metric, plot_title in zip(axes, metric_names, titles):
         values = metrics[metric]
         confs = ci[metric]
         lower = np.abs([v - c[0] for v, c in zip(values, confs)])
@@ -236,16 +239,52 @@ def plot_metric_by_size(metric_col, actual_col, margin, name):
             color=f"C{i}",
             label=metric.capitalize(),
         )
-        ax.set_title(title)
+        ax.set_title(plot_title)
         ax.set_xlabel("VMs per scenario")
         ax.set_ylabel("Score")
+        ax.set_xticks(np.linspace(min(sizes), max(sizes), 4, dtype=int))
         i += 1
 
     plt.tight_layout()
     save_figure(f"results/{name}", fig, (8, 3))
 
 
-# Example usage:
-plot_metric_by_size("price", "priceActual", PRICE_MARGIN, "pricing-size")
-plot_metric_by_size("avgCpu", "avgCpuActual", USAGE_MARGIN, "usage-size")
-plot_metric_by_size("wasteful", "wastefulActual", None, "wasteful-size")
+# Price
+plot_metric_by_size(
+    "Price Performance by VM Count (overall)",
+    df,
+    "price",
+    "priceActual",
+    PRICE_MARGIN,
+    "pricing-size",
+)
+
+
+# Usage
+plot_metric_by_size(
+    "Usage Performance by VM Count (overall)",
+    df,
+    "avgCpu",
+    "avgCpuActual",
+    USAGE_MARGIN,
+    "usage-size",
+)
+
+
+# Waste
+plot_metric_by_size(
+    "Waste Performance by VM Count (overall)",
+    df,
+    "wasteful",
+    "wastefulActual",
+    None,
+    "wasteful-size",
+)
+plot_metric_by_size(
+    "Waste Performance by VM Count (isolated)",
+    df_usage_correct,
+    "wasteful",
+    "wastefulActual",
+    None,
+    "wasteful-size-isolated",
+)

@@ -1,33 +1,29 @@
-import { Agent, MCPServerStreamableHttp } from "@openai/agents";
+import { Agent, tool } from "@openai/agents";
 import { z } from "zod";
 import { agentConstants } from "./constants";
 
 const instructions = `
 Task:
-Find the largest possible smaller instance type for each cloud virtual machine instance.
-
-Criteria for a Smaller Instance Type:
-
-    It must have fewer vCPUs than the current instance (specifically, the next step down in the provider’s vCPU configurations, or custom if available and beneficial).
-
-    It must have the same amount of memory, or if not available, a smaller amount.
-
-    It must be available from the same cloud provider as the current instance.
-
-    Never suggest an instance type that is larger or equal in vCPUs or memory.
+Find the CPU downize option for the cloud virtual machine instance based on its type and the given options.
 
 Input:
-A list of instances. Each instance includes:
+A cloud virtual machine instance, which includes:
 
     id: a unique identifier
 
     type: the current instance type
 
-    provider: the cloud provider for the instance (e.g., "aws", "gcp", "azure")
+And a list of the available instance types for the provider of the instance. Each type includes:
+
+    name: the instance type name
+
+    vcpu: the number of virtual CPUs
+
+    memory: the amount of memory in GB
 
 Instructions:
 
-    For each instance check if a smaller instance type exists that meets the criteria above.
+    Call the tool get_smaller_instance with the list of available instance types and the instance type name.
 
     If a valid downsizing option is found, return the recommended instance type.
 
@@ -36,26 +32,40 @@ Instructions:
     Return the exact instance type name as it appears in the provider's documentation or API.
 
 Output:
-A structured result with one entry per instance, including the new instance type or null if downsizing is not possible.
+The new instance type or null if downsizing is not possible.
 `;
 
-export function createDownsizeAgent({
-  mcp,
-}: {
-  mcp: MCPServerStreamableHttp[];
-}) {
+const getSmallerInstance = tool({
+  name: "get_smaller_instance",
+  description:
+    "Get the first smaller instance from a list of instance types. Give the full list of instance types for the provider, and the name of the instance type to downsize.",
+  parameters: z.object({
+    list: z.array(
+      z.object({ name: z.string(), vcpu: z.number(), memory: z.number() })
+    ),
+    smallerThan: z.string(),
+  }),
+  async execute({ list, smallerThan: smallerThanName }) {
+    const smallerThan = list.find((i) => i.name === smallerThanName);
+    if (!smallerThan) return null;
+
+    list.sort((a, b) => b.vcpu - a.vcpu || b.memory - a.memory);
+    const smallerInstance = list.find(
+      (i) => i.vcpu < smallerThan.vcpu && i.memory <= smallerThan.memory
+    );
+
+    return smallerInstance ? smallerInstance.name : null;
+  },
+});
+
+export function createDownsizeAgent() {
   return new Agent({
     instructions,
     name: "Downsize Agent",
     model: agentConstants.models.base,
-    mcpServers: mcp,
+    tools: [getSmallerInstance],
     outputType: z.object({
-      results: z.array(
-        z.object({
-          id: z.string(),
-          newType: z.string().nullable(),
-        })
-      ),
+      newType: z.string().nullable(),
     }),
   });
 }

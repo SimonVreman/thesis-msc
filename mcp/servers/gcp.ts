@@ -5,6 +5,8 @@ import { gcpInstanceTypes, providerById } from "../registry/instance-types";
 import { prisma } from "../lib/prisma";
 
 const toolname = <T extends string>(name: T) => `gcp.${name}` as const;
+const tooldescription = <T extends string>(description: T) =>
+  `GCP: ${description}` as const;
 
 export function createGCP() {
   const server = new McpServer({
@@ -14,22 +16,26 @@ export function createGCP() {
 
   server.tool(
     toolname("machines"),
-    "Overview of available machine types with vCPU and memory.",
+    tooldescription(
+      "Overview of available machine types with vCPU and memory."
+    ),
     async () => ({
       content: gcpInstanceTypes.map((instance) => ({
         type: "text",
-        text: `NAME: ${instance.name}; VCPU: ${JSON.stringify(
-          instance.vcpu
-        )}; MEMORY: ${JSON.stringify(instance.memory)} ${
-          typeof instance.memory === "object" ? "per core" : ""
-        };`,
+        text: JSON.stringify({
+          name: instance.name,
+          vcpu: instance.vcpu,
+          memory:
+            JSON.stringify(instance.memory) +
+            (typeof instance.memory === "object" ? " per core" : ""),
+        }),
       })),
     })
   );
 
   server.tool(
     toolname("machine-price"),
-    "Price for one hour of a specific machine type.",
+    tooldescription("Price for one hour of a specific machine type."),
     { type: z.string() },
     async ({ type }) => {
       const price = gcpInstanceTypes
@@ -38,13 +44,13 @@ export function createGCP() {
 
       if (price == null) return textError("ERR: machine type not found.");
 
-      return { content: [{ type: "text", text: price }] };
+      return textSuccess(JSON.stringify({ price }));
     }
   );
 
   server.tool(
     toolname("usage"),
-    "Get the usage of a specific machine.",
+    tooldescription("Get the usage of a specific machine."),
     { id: z.string() },
     async ({ id }) => {
       const vm = await prisma.virtual_machine.findFirst({
@@ -55,7 +61,11 @@ export function createGCP() {
         return textError(`ERR: machine with ID ${id} not found.`);
 
       return textSuccess(
-        `Max CPU: ${vm.max_cpu}, Avg CPU: ${vm.avg_cpu}, P95 Max CPU: ${vm.p95_max_cpu}`
+        JSON.stringify({
+          max_cpu: vm.max_cpu,
+          avg_cpu: vm.avg_cpu,
+          p95_max_cpu: vm.p95_max_cpu,
+        })
       );
     }
   );

@@ -5,6 +5,8 @@ import { prisma } from "../lib/prisma";
 import { textError, textSuccess } from "../lib/response";
 
 const toolname = <T extends string>(name: T) => `aws.${name}` as const;
+const tooldescription = <T extends string>(description: T) =>
+  `AWS: ${description}` as const;
 
 export function createAws() {
   const server = new McpServer({
@@ -14,7 +16,9 @@ export function createAws() {
 
   server.tool(
     toolname("available-instances"),
-    "Get a list of available instance types with their vCPU and memory.",
+    tooldescription(
+      "Get a list of available instance types with their vCPU and memory."
+    ),
     async () => ({
       content: awsInstanceTypes.map((instance) => ({
         type: "text",
@@ -25,7 +29,7 @@ export function createAws() {
 
   server.tool(
     toolname("instance-price"),
-    "Get the hourly price of a specific instance type.",
+    tooldescription("Get the hourly price of a specific instance type."),
     { name: z.string() },
     async ({ name }) => {
       const price = awsInstanceTypes
@@ -38,13 +42,13 @@ export function createAws() {
           content: [{ type: "text", text: "Error: Instance type not found." }],
         };
 
-      return { content: [{ type: "text", text: price }] };
+      return textSuccess(JSON.stringify({ price }));
     }
   );
 
   server.tool(
     toolname("usage"),
-    "Get the usage of a specific machine.",
+    tooldescription("Get the usage of a specific machine."),
     { id: z.string() },
     async ({ id }) => {
       const vm = await prisma.virtual_machine.findFirst({
@@ -55,7 +59,11 @@ export function createAws() {
         return textError(`ERR: machine with ID ${id} not found.`);
 
       return textSuccess(
-        `Max CPU: ${vm.max_cpu}, Avg CPU: ${vm.avg_cpu}, P95 Max CPU: ${vm.p95_max_cpu}`
+        JSON.stringify({
+          max_cpu: vm.max_cpu,
+          avg_cpu: vm.avg_cpu,
+          p95_max_cpu: vm.p95_max_cpu,
+        })
       );
     }
   );

@@ -13,6 +13,7 @@ export const awsInstanceTypes = [
 ] as const;
 
 export const azureInstanceTypes = [
+  { name: "B2ts v2", vcpu: 2, memory: 1, price: 0.012 },
   { name: "D2ls v5", vcpu: 2, memory: 4, price: 0.097 },
   { name: "D2 v5", vcpu: 2, memory: 8, price: 0.115 },
   { name: "E2as v6", vcpu: 2, memory: 16, price: 0.144 },
@@ -63,7 +64,16 @@ const typeForSpecs = ({
   }[];
   vcpu: number;
   memory: number;
-}) => types.find((type) => type.vcpu === vcpu && type.memory === memory);
+}) =>
+  types
+    .toReversed()
+    .find(
+      (t) =>
+        typeof t.vcpu !== "object" &&
+        typeof t.memory !== "object" &&
+        t.vcpu <= vcpu &&
+        t.memory <= memory
+    );
 
 export const vmInstanceTypeMap = ({
   vcpu,
@@ -93,6 +103,7 @@ export const vmInstanceTypeMap = ({
 };
 
 // cpu, mem, availability
+// 2	2       Azure           *2/1
 // 2	2       AWS, GCP        *2/2
 // 2	4       AWS, Azure, GCP *2/4
 // 2	8       AWS, Azure, GCP *2/8

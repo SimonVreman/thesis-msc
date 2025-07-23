@@ -20,7 +20,6 @@ PRICE_MARGIN = 0.01
 USAGE_MARGIN = 0.01
 
 if len(sys.argv) > 1:
-    # 500+ results: 20250715093132-simulation-results.csv
     latest_csv = f"{RESULTS_DIR}/{sys.argv[1]}"
 else:
     csv_files = [
@@ -120,7 +119,7 @@ def metrics_for_series(classified_series: pd.Series, true_series: pd.Series):
 
 by_provider(
     [df],
-    "price success rate: when provider correct / overall",
+    "price success rate: overall",
     lambda df: metrics_for_series(
         ~(df["price"].isna()),
         (abs(df["price"] - df["priceActual"]) < PRICE_MARGIN) | df["price"].isna(),
@@ -129,7 +128,7 @@ by_provider(
 
 by_provider(
     [df],
-    "usage success rate: when provider correct / overall",
+    "usage success rate: overall",
     lambda df: metrics_for_series(
         ~(df["avgCpu"].isna()),
         (abs(df["avgCpu"] - df["avgCpuActual"]) < USAGE_MARGIN) | df["avgCpu"].isna(),

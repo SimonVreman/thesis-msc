@@ -13,6 +13,7 @@ aws = [
 ]
 
 azure = [
+    {"name": "B2ts v2", "vcpu": 2, "memory": 1, "price": 0.012},
     {"name": "D2ls v5", "vcpu": 2, "memory": 4, "price": 0.097},
     {"name": "D2 v5", "vcpu": 2, "memory": 8, "price": 0.115},
     {"name": "E2as v6", "vcpu": 2, "memory": 16, "price": 0.144},

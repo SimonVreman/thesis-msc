@@ -3,8 +3,11 @@ import { createPriceAgent } from "../prototype/agents/price";
 import { createUsageAgent } from "../prototype/agents/usage";
 import { createWasteAgent } from "../prototype/agents/waste";
 import { batchedSimulation } from "./batched-simulation";
-import { createResultWriter, processBatch } from "./process-simulation";
-import { createRecommendationAgent } from "../prototype/agents/recommendation";
+import {
+  createMetaWriter,
+  createResultWriter,
+  processBatch,
+} from "./process-simulation";
 import { createDownsizeAgent } from "../prototype/agents/downsize";
 import { createOfferingAgent } from "../prototype/agents/offering";
 
@@ -41,19 +44,20 @@ export const simulate = async () =>
       price: createPriceAgent({ mcp }),
       usage: createUsageAgent({ mcp }),
       waste: createWasteAgent(),
-      recommendation: createRecommendationAgent({ mcp }),
       downsize: createDownsizeAgent(),
       offering: await createOfferingAgent({ mcp }),
     };
 
     console.log("Starting simulation...");
     let lastStart = performance.now();
+
     const out = createResultWriter();
+    const outMeta = createMetaWriter();
 
     await batchedSimulation({
       agents,
       chunkSize: 50,
-      maxIndex: 10,
+      maxIndex: 50,
       content: async (id) =>
         await Bun.file(`../mcp/generated/scenarios/scenario-${id}.json`).json(),
       process: async ({ batch, index }) => {
@@ -67,7 +71,7 @@ export const simulate = async () =>
         );
 
         lastStart = performance.now();
-        await processBatch({ batch, out });
+        await processBatch({ batch, out, outMeta });
 
         console.log(
           `Processed results for batch ${index} in ${(

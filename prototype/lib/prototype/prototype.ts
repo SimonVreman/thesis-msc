@@ -36,6 +36,32 @@ const runWithContext = async <
 };
 
 const js = JSON.stringify;
+const ts = (t?: number) => {
+  const tNext = performance.now();
+  return { t: tNext, dt: Math.round(tNext - (t ?? tNext)) };
+};
+
+const createMetrics = () => ({
+  t_overall: 0,
+  i_offering: 0,
+  o_offering: 0,
+  t_offering: 0,
+  i_price: 0,
+  o_price: 0,
+  t_price: 0,
+  i_usage: 0,
+  o_usage: 0,
+  t_usage: 0,
+  i_waste: 0,
+  o_waste: 0,
+  t_waste: 0,
+  i_downsize: null as number | null,
+  o_downsize: null as number | null,
+  t_downsize: 0,
+  i_downsizePrice: null as number | null,
+  o_downsizePrice: null as number | null,
+  t_downsizePrice: 0,
+});
 
 export async function runPrototype({
   scenario,
@@ -44,23 +70,9 @@ export async function runPrototype({
   scenario: Scenario;
   agents: Agents;
 }) {
-  const metrics = {
-    duration: 0,
-    i_offering: 0,
-    o_offering: 0,
-    i_price: 0,
-    o_price: 0,
-    i_usage: 0,
-    o_usage: 0,
-    i_waste: 0,
-    o_waste: 0,
-    i_downsize: null as number | null,
-    o_downsize: null as number | null,
-    i_downsizePrice: null as number | null,
-    o_downsizePrice: null as number | null,
-  };
-
-  const start = performance.now();
+  const metrics = createMetrics();
+  let t = ts().t;
+  let tStart = t;
 
   const providers = scenario.instances
     .map((i) => i.provider)
@@ -80,13 +92,17 @@ export async function runPrototype({
     })
   );
 
+  ({ t, dt: metrics.t_offering } = ts(t));
+
   const [prices, usage] = await Promise.all([
-    runWithContext(agents.price, js(scenario), { maxTurns }),
+    runWithContext(agents.price, js(scenario), { maxTurns }).then(
+      (r) => ([r, (metrics.t_price = ts(t).dt)] as const)[0]
+    ),
     runWithContext(
       agents.usage,
       js(scenario.instances.map(({ id, provider }) => ({ id, provider }))),
       { maxTurns }
-    ),
+    ).then((r) => ([r, (metrics.t_usage = ts(t).dt)] as const)[0]),
   ]);
 
   if (prices.result == null) throw new Error("Price agent failed");
@@ -97,12 +113,16 @@ export async function runPrototype({
   metrics.i_usage = usage.tokens.in;
   metrics.o_usage = usage.tokens.out;
 
+  t = ts().t;
+
   const waste = await runWithContext(agents.waste, js(usage.result.results));
 
   if (waste.result == null) throw new Error("Waste agent failed");
 
   metrics.i_waste = waste.tokens.in;
   metrics.o_waste = waste.tokens.out;
+
+  ({ t, dt: metrics.t_waste } = ts(t));
 
   const shouldDownsize = mergeById(scenario.instances, waste.result.results)
     .filter((r) => r.wasteful)
@@ -128,6 +148,8 @@ export async function runPrototype({
     })
   );
 
+  ({ t, dt: metrics.t_downsize } = ts(t));
+
   let newPrices: { id: string; newPrice: number }[] = [];
   if (downsized.some((r) => r.newType != null)) {
     const downsizePrices = await runWithContext(
@@ -150,7 +172,8 @@ export async function runPrototype({
     metrics.o_downsizePrice ??= downsizePrices.tokens.out;
   }
 
-  metrics.duration = Math.round(performance.now() - start);
+  ({ t, dt: metrics.t_downsizePrice } = ts(t));
+  ({ dt: metrics.t_overall } = ts(tStart));
 
   return {
     metrics,

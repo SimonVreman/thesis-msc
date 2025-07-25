@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { textError, textSuccess } from "../lib/response";
-import { gcpInstanceTypes, providerById } from "../registry/instance-types";
+import { gcpInstanceTypes, providerByUUID } from "../registry/instance-types";
 import { prisma } from "../lib/prisma";
 
 const toolname = <T extends string>(name: T) => `gcp.${name}` as const;
@@ -57,7 +57,7 @@ export function createGCP() {
         where: { id: { equals: id } },
       });
 
-      if (!vm || providerById(vm.id) !== "gcp")
+      if (!vm || providerByUUID(vm.uuid) !== "gcp")
         return textError(`ERR: machine with ID ${id} not found.`);
 
       return textSuccess(

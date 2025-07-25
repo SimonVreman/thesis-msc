@@ -57,7 +57,7 @@ export const simulate = async () =>
     await batchedSimulation({
       agents,
       chunkSize: 50,
-      maxIndex: 50,
+      maxIndex: 200,
       content: async (id) =>
         await Bun.file(`../mcp/generated/scenarios/scenario-${id}.json`).json(),
       process: async ({ batch, index }) => {

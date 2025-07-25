@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+
 export const awsInstanceTypes = [
   { name: "t3a.small", vcpu: 2, memory: 2, price: 0.0204 },
   { name: "c5.large", vcpu: 2, memory: 4, price: 0.096 },
@@ -38,12 +40,12 @@ export const gcpInstanceTypes = [
   { name: "n4-standard-16", vcpu: 16, memory: 64, price: 0.8348 },
   { name: "n4-standard-32", vcpu: 32, memory: 128, price: 1.6697 },
   { name: "n4-standard-48", vcpu: 48, memory: 192, price: 2.5045 },
-  {
-    name: "n4-custom",
-    vcpu: { min: 2, max: 80, step: 2 },
-    memory: { min: 2, max: 8, step: 0.25 },
-    price: { core: 0.0377, memory: 0.0043 },
-  },
+  // {
+  //   name: "n4-custom",
+  //   vcpu: { min: 2, max: 80, step: 2 },
+  //   memory: { min: 2, max: 8, step: 0.25 },
+  //   price: { core: 0.0377, memory: 0.0043 },
+  // },
 ] as const;
 
 export const instanceTypes = [
@@ -116,6 +118,9 @@ export const vmInstanceTypeMap = ({
 // 30	70      AWS, Azure, GCP *32/128
 
 const providers = ["aws", "azure", "gcp"] as const;
-// Relies on our sampling for even distrubution of VMs across providers.
-export const providerById = (id: string) =>
-  providers["ABCDEF".indexOf(id[0]) % providers.length];
+
+export const providerByUUID = (uuid: string) => {
+  const hash = createHash("md5").update(uuid.slice(4)).digest("hex");
+  const firstPart = parseInt(hash.slice(0, 8), 16); // 32-bit integer
+  return providers[firstPart % providers.length];
+};

@@ -16,5 +16,6 @@ export const resultCSV = createCSVHelper(
     newType: z.string().nullable(),
     newPrice: z.number().nullable(),
     newPriceActual: z.number().nullable(),
+    lifetime: z.number(),
   })
 );

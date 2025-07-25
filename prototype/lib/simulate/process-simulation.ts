@@ -90,6 +90,7 @@ export async function processBatch({
           newType: instance.newType,
           newPrice: instance.newPrice,
           newPriceActual: newS?.price ?? null,
+          lifetime: s.lifetime,
         })
       );
     }

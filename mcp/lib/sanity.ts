@@ -1,6 +1,6 @@
 import {
   instanceTypes,
-  providerById,
+  providerByUUID,
   vmInstanceTypeMap,
 } from "../registry/instance-types";
 import { prisma } from "./prisma";
@@ -24,6 +24,7 @@ export function attachSanityHandler(app: Express) {
         price?: number;
         name: string;
         provider: string;
+        lifetime: number;
       }[],
     };
 
@@ -37,7 +38,7 @@ export function attachSanityHandler(app: Express) {
         continue;
       }
 
-      const provider = providerById(vm.id);
+      const provider = providerByUUID(vm.uuid);
       const { name } = vmInstanceTypeMap({
         vcpu: vm.cores,
         memory: vm.memory,
@@ -55,6 +56,7 @@ export function attachSanityHandler(app: Express) {
         price: typeof price === "object" ? undefined : price,
         name,
         provider,
+        lifetime: vm.deleted.getTime() - vm.created.getTime(),
       });
     }
 

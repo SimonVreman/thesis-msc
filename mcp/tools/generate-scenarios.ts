@@ -1,7 +1,7 @@
 import type { virtual_machine } from "../generated/prisma";
 import { prisma } from "../lib/prisma";
 import type { Scenario } from "../lib/scenario";
-import { providerById, vmInstanceTypeMap } from "../registry/instance-types";
+import { providerByUUID, vmInstanceTypeMap } from "../registry/instance-types";
 
 const outputDirectory = "./generated/scenarios";
 const scenarioCount = 10000;
@@ -14,11 +14,11 @@ for (let scenarioIndex = 0; scenarioIndex < scenarioCount; scenarioIndex++) {
   const scenario: Scenario = { instances: [] };
 
   const vms: virtual_machine[] =
-    await prisma.$queryRaw`SELECT * FROM virtual_machine ORDER BY reverse(id) LIMIT ${scenarioSize} OFFSET ${skip}`;
+    await prisma.$queryRaw`SELECT * FROM virtual_machine ORDER BY uuid LIMIT ${scenarioSize} OFFSET ${skip}`;
 
   for (let vmIndex = 0; vmIndex < vms.length; vmIndex++) {
     const vm = vms[vmIndex];
-    const provider = providerById(vm.id);
+    const provider = providerByUUID(vm.uuid);
 
     const type = vmInstanceTypeMap({
       vcpu: vm.cores,

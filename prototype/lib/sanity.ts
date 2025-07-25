@@ -9,6 +9,7 @@ export async function getSanity(scenario: Scenario): Promise<{
     price?: number;
     name: string;
     provider: string;
+    lifetime: number;
   }[];
 }> {
   return await fetch("http://localhost:5100/sanity", {

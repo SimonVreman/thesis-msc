@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { awsInstanceTypes, providerById } from "../registry/instance-types";
+import { awsInstanceTypes, providerByUUID } from "../registry/instance-types";
 import { prisma } from "../lib/prisma";
 import { textError, textSuccess } from "../lib/response";
 
@@ -55,7 +55,7 @@ export function createAws() {
         where: { id: { equals: id } },
       });
 
-      if (!vm || providerById(vm.id) !== "aws")
+      if (!vm || providerByUUID(vm.uuid) !== "aws")
         return textError(`ERR: machine with ID ${id} not found.`);
 
       return textSuccess(

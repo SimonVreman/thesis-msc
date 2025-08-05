@@ -19,13 +19,16 @@ RESULTS_DIR = "../prototype/out"
 PRICE_MARGIN = 0.01
 USAGE_MARGIN = 0.01
 
+ALPHA = 0.01
+BOOTSTRAP_N = 10000
+
 if len(sys.argv) > 1:
     latest_csv = f"{RESULTS_DIR}/{sys.argv[1]}"
 else:
     csv_files = [
         os.path.join(RESULTS_DIR, f)
         for f in os.listdir(RESULTS_DIR)
-        if f.endswith(".csv")
+        if f.endswith("results.csv")
     ]
     if not csv_files:
         raise FileNotFoundError("No CSV files found in the results directory.")
@@ -101,11 +104,13 @@ def metrics_for_series(classified_series: pd.Series, true_series: pd.Series):
     tn = (~classified_series & ~true_series).sum()
 
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-    p_wilson = proportion_confint(tp, tp + fp, method="wilson")
+    p_wilson = proportion_confint(tp, tp + fp, method="wilson", alpha=ALPHA)
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-    r_wilson = proportion_confint(tp, tp + fn, method="wilson")
+    r_wilson = proportion_confint(tp, tp + fn, method="wilson", alpha=ALPHA)
     accuracy = (tp + tn) / len(classified_series)
-    a_wilson = proportion_confint(tp + tn, len(classified_series), method="wilson")
+    a_wilson = proportion_confint(
+        tp + tn, len(classified_series), method="wilson", alpha=ALPHA
+    )
     f1_score = (
         2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
     )
@@ -128,6 +133,47 @@ def calculate_savings(savings_df: pd.DataFrame) -> float:
     return 0
 
 
+def compute_savings(scoped_df: pd.DataFrame, provider: str | None = None):
+    if provider:
+        scoped_df = scoped_df[scoped_df["provider"] == provider]
+
+    bootstrap_savings = []
+    for i in range(BOOTSTRAP_N):
+        bootstrap_df = scoped_df.sample(n=len(scoped_df), replace=True, random_state=i)
+        bootstrap_savings.append(calculate_savings(bootstrap_df))
+
+    return {
+        "value": calculate_savings(scoped_df),
+        "ci_lower": np.percentile(bootstrap_savings, ALPHA * 100),
+        "ci_upper": np.percentile(bootstrap_savings, 100 - ALPHA * 100),
+    }
+
+
+def compute_benchmark_savings(scoped_df: pd.DataFrame, provider: str | None = None):
+    if provider:
+        scoped_df = scoped_df[scoped_df["provider"] == provider]
+
+    bootstrap_savings = []
+    for i in range(BOOTSTRAP_N):
+        bootstrap_df = scoped_df.sample(n=len(scoped_df), replace=True, random_state=i)
+        savings = calculate_savings(bootstrap_df)
+        theoretical = calculate_savings(
+            bootstrap_df.assign(savings=bootstrap_df["theoreticalSavings"])
+        )
+        bootstrap_savings.append(savings / theoretical if theoretical > 0 else 0)
+
+    savings = calculate_savings(scoped_df)
+    theoretical = calculate_savings(
+        scoped_df.assign(savings=scoped_df["theoreticalSavings"])
+    )
+
+    return {
+        "value": savings / theoretical if theoretical > 0 else 0,
+        "ci_lower": np.percentile(bootstrap_savings, ALPHA * 100),
+        "ci_upper": np.percentile(bootstrap_savings, 100 - ALPHA * 100),
+    }
+
+
 by_provider(
     [df],
     "price success rate: overall",
@@ -146,9 +192,11 @@ by_provider(
     ),
 )
 
+df_wasteful_correct = df[df["wasteful"] == df["wastefulActual"]].reset_index()
+
 by_provider(
-    [df],
-    "downsize success rate: overall",
+    [df_wasteful_correct],
+    "downsize success rate: wasteful correct",
     lambda df: metrics_for_series(
         ~(df["newType"].isna()),
         (~df["newTypeActual"].isna())
@@ -168,10 +216,30 @@ by_provider(
 
 df_theoretical_savings = df.assign(savings=df["theoreticalSavings"])
 
+
+def savings_line(savings_df: pd.DataFrame):
+    values = compute_savings(savings_df)
+
+    return f"{values['value']:.3f} [{values['ci_lower']:.3f}, {values['ci_upper']:.3f}]"
+
+
 by_provider(
     [df, df_theoretical_savings],
     "savings fraction: actual / theoretical",
-    lambda df: f"{(calculate_savings(df) * 100):.2f}%",
+    savings_line,
+)
+
+
+def savings_benchmark_line(savings_df: pd.DataFrame):
+    values = compute_benchmark_savings(savings_df)
+
+    return f"{values['value']:.3f} [{values['ci_lower']:.3f}, {values['ci_upper']:.3f}]"
+
+
+by_provider(
+    [df],
+    "savings benchmark fraction: actual",
+    savings_benchmark_line,
 )
 
 
@@ -216,17 +284,17 @@ def plot_metric_by_size(title, df, metric_col, actual_col, margin, name):
         metrics["recall"].append(rec)
 
         acc_ci = (
-            proportion_confint(tp + tn, len(subset), method="wilson")
+            proportion_confint(tp + tn, len(subset), method="wilson", alpha=ALPHA)
             if len(subset) > 0
             else (0, 0)
         )
         prec_ci = (
-            proportion_confint(tp, tp + fp, method="wilson")
+            proportion_confint(tp, tp + fp, method="wilson", alpha=ALPHA)
             if (tp + fp) > 0
             else (0, 0)
         )
         rec_ci = (
-            proportion_confint(tp, tp + fn, method="wilson")
+            proportion_confint(tp, tp + fn, method="wilson", alpha=ALPHA)
             if (tp + fn) > 0
             else (0, 0)
         )
@@ -267,26 +335,9 @@ def plot_metric_by_size(title, df, metric_col, actual_col, margin, name):
     save_figure(f"results/{name}", fig, (8, 3))
 
 
-def plot_price_bar_chart(name):
-    def compute_savings(scoped_df: pd.DataFrame, provider: str | None = None):
-        if provider:
-            scoped_df = scoped_df[scoped_df["provider"] == provider]
-
-        bootstrap_savings = []
-        for _ in range(1000):
-            bootstrap_df = scoped_df.sample(
-                n=len(scoped_df), replace=True, random_state=1
-            )
-            bootstrap_savings.append(calculate_savings(bootstrap_df))
-
-        return {
-            "value": calculate_savings(scoped_df),
-            "ci_lower": np.percentile(bootstrap_savings, 2.5),
-            "ci_upper": np.percentile(bootstrap_savings, 97.5),
-        }
-
+def plot_price_combined_chart(name):
     categories = ("All", "AWS", "Azure", "GCP")
-    data = {
+    price_data = {
         "Actual": (
             compute_savings(df),
             compute_savings(df, "aws"),
@@ -300,22 +351,30 @@ def plot_price_bar_chart(name):
             compute_savings(df_theoretical_savings, "gcp"),
         ),
     }
+    benchmark_data = (
+        compute_benchmark_savings(df),
+        compute_benchmark_savings(df, "aws"),
+        compute_benchmark_savings(df, "azure"),
+        compute_benchmark_savings(df, "gcp"),
+    )
 
-    x = np.arange(len(categories))  # the label locations
-    width = 1 / (len(data.keys()) + 1)  # the width of the bars
+    x = np.arange(len(categories))
+    width = 1 / (len(price_data.keys()) + 1)
+
+    fig, axes = plt.subplots(1, 2, figsize=(8, 4), layout="constrained")
+
+    # Left: Price Savings Bar Chart
+    ax = axes[0]
     multiplier = 0
-
-    fig, ax = plt.subplots(layout="constrained")
-
-    for attribute, measurement in data.items():
+    for attribute, measurement in price_data.items():
         offset = width * multiplier
         height = [x["value"] * 100 for x in measurement]
-        lower = [abs(x["value"] * 100 - x["ci_lower"] * 100) for x in measurement]
-        upper = [abs(x["ci_upper"] * 100 - x["value"] * 100) for x in measurement]
+        lower = [abs((x["value"] - x["ci_lower"]) * 100) for x in measurement]
+        upper = [abs((x["ci_upper"] - x["value"]) * 100) for x in measurement]
         rects = ax.bar(
             x + offset, height, width, label=attribute, yerr=[lower, upper], capsize=5
         )
-        ax.bar_label(rects, padding=5, fmt="%.1f%%")
+        ax.bar_label(rects, padding=5, fmt="%.1f%%", rotation=0, size="x-small")
         multiplier += 1
 
     ax.set_ylabel("Savings (%)")
@@ -323,73 +382,31 @@ def plot_price_bar_chart(name):
     ax.set_xticks(x + width / 2, categories)
     ax.set_ymargin(0.2)
     ax.legend(
-        ncols=3,
+        ncols=2,
         loc="lower center",
-        bbox_to_anchor=(0.5, -0.2),
+        bbox_to_anchor=(0.5, -0.25),
     )
 
-    save_figure(f"results/{name}", fig, (5, 4))
-
-
-def plot_price_benchmark_chart(name):
-    def compute_savings(scoped_df: pd.DataFrame, provider: str | None = None):
-        if provider:
-            scoped_df = scoped_df[scoped_df["provider"] == provider]
-
-        bootstrap_savings = []
-        for _ in range(1000):
-            bootstrap_df = scoped_df.sample(
-                n=len(scoped_df), replace=True, random_state=1
-            )
-            savings = calculate_savings(bootstrap_df)
-            theoretical = calculate_savings(
-                bootstrap_df.assign(savings=bootstrap_df["theoreticalSavings"])
-            )
-            bootstrap_savings.append(savings / theoretical if theoretical > 0 else 0)
-
-        savings = calculate_savings(scoped_df)
-        theoretical = calculate_savings(
-            scoped_df.assign(savings=scoped_df["theoreticalSavings"])
-        )
-
-        return {
-            "value": savings / theoretical if theoretical > 0 else 0,
-            "ci_lower": np.percentile(bootstrap_savings, 2.5),
-            "ci_upper": np.percentile(bootstrap_savings, 97.5),
-        }
-
-    categories = ("All", "AWS", "Azure", "GCP")
-    data = (
-        compute_savings(df),
-        compute_savings(df, "aws"),
-        compute_savings(df, "azure"),
-        compute_savings(df, "gcp"),
-    )
-
-    x = np.arange(len(categories))
-    height = [item["value"] * 100 for item in data]
-    lower = [abs(item["value"] * 100 - item["ci_lower"] * 100) for item in data]
-    upper = [abs(item["ci_upper"] * 100 - item["value"] * 100) for item in data]
-    width = 0.6
-
-    fig, ax = plt.subplots(figsize=(6, 4))
+    # Right: Benchmark Bar Chart
+    ax = axes[1]
+    height = [item["value"] * 100 for item in benchmark_data]
+    lower = [abs((item["value"] - item["ci_lower"]) * 100) for item in benchmark_data]
+    upper = [abs((item["ci_upper"] - item["value"]) * 100) for item in benchmark_data]
+    b_width = 0.6
     colors = [f"C{i}" for i in range(len(categories))]
-    rects = ax.bar(x, height, width, yerr=[lower, upper], capsize=5, color=colors)
+    rects = ax.bar(x, height, b_width, yerr=[lower, upper], capsize=5, color=colors)
     ax.bar_label(rects, padding=5, fmt="%.1f%%")
-
-    # Add threshold line at 80%, dashed
     ax.axhline(80, color="black", linestyle="--", linewidth=1, label="80% Threshold")
-
     ax.set_ylabel("Percentage of Benchmark (%)")
     ax.set_title("Cost Reduction Relative to Benchmark")
     ax.set_xticks(x, categories)
     ax.set_ymargin(0.2)
     ax.legend(
         loc="lower center",
-        bbox_to_anchor=(0.5, -0.2),
+        bbox_to_anchor=(0.5, -0.25),
     )
 
-    save_figure(f"results/{name}", fig, (5, 4))
+    save_figure(f"results/{name}", fig, (8, 4))
 
 
 # Price
@@ -432,8 +449,8 @@ plot_metric_by_size(
     "wasteful-size-isolated",
 )
 
-plot_price_bar_chart("savings-bars")
-plot_price_benchmark_chart("savings-benchmark-bars")
+# plot_price_bar_chart("savings-bars")
+plot_price_combined_chart("savings-bars")
 
 print(f"\nGot results for {len(df)} VMs in {len(df['scenario'].unique())} scenarios.")
 
